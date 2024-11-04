@@ -5,14 +5,16 @@ import * as cookieParser from 'cookie-parser';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
+
   const app = await NestFactory.create(AppModule);
+  app.enableCors();
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
   app.use(cookieParser());
   const config = new DocumentBuilder()
-    .setTitle('NestJs example')
-    .setDescription('The NestJs API description')
+    .setTitle('Edu Communication API')
+    .setDescription('The Edu Communication API description')
     .setVersion('1.0')
-    .addTag('cats')
+    .addTag('edu-communication')
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
