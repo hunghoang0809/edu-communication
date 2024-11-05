@@ -23,13 +23,7 @@ jobs:
       - name: Build the application
         run: npm run build  # Build the NestJS application
 
-      - name: Build Docker image
-        run:
-          docker build -t registry.acdtech.vn/edu:latest .
 
-      - name: Push Docker image to Docker Registry
-        run:
-          docker push registry.acdtech.vn/edu:latest
   deploy:
     runs-on: ubuntu-latest
     needs: build
@@ -44,6 +38,6 @@ jobs:
           pass: ${{ secrets.SSH_PASSWORD }}
           run: |
             cd edu-communication
-            docker pull registry.acdtech.vn/edu:latest
+            docker compose build
             docker compose up -d 
 
