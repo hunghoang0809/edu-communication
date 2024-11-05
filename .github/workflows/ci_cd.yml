@@ -25,11 +25,11 @@ jobs:
 
       - name: Build Docker image
         run:
-          docker build -t 160.30.136.119:5000/edu:latest .
+          docker build -t 160.30.136.24:5000/edu:latest .
 
       - name: Push Docker image to Docker Registry
         run:
-          docker push 160.30.136.119:5000/edu:latest
+          docker push 160.30.136.24:5000/edu:latest
 
   deploy:
     runs-on: ubuntu-latest
