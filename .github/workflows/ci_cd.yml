@@ -37,7 +37,8 @@ jobs:
           port: 22
           pass: ${{ secrets.SSH_PASSWORD }}
           run: |
-            cd edu-communication
+            cd Project/edu-communication
+            git pull
             docker compose build
             docker compose up -d 
 
