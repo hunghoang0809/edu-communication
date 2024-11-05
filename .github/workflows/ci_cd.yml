@@ -23,7 +23,7 @@ jobs:
       - name: Build the application
         run: npm run build  # Build the NestJS application
 
-            - name: Build Docker image
+      - name: Build Docker image
         run:
           docker build -t registry.acdtech.vn/edu:latest .
 
