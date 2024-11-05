@@ -1,0 +1,39 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'  # Adjust the version as needed
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build the application
+        run: npm run build
+
+      - name: Archive Test Reports
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-reports
+          path: ./test-results/  # Adjust this path according to where your test reports are generated
+
+      - name: Notify Success
+        if: success()
+        run: echo "PR checks passed successfully!"
+
+      - name: Notify Failure
+        if: failure()
+        run: echo "PR checks failed!"

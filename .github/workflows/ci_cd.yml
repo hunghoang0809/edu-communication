@@ -1,0 +1,49 @@
+name: CI/CD Pipeline for NestJS Config Service
+
+on:
+  push:
+    branches:
+      -main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'  # Adjust the version as needed
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build the application
+        run: npm run build  # Build the NestJS application
+
+      - name: Build Docker image
+        run:
+          docker build -t 160.30.136.119:5000/edu:latest .
+
+      - name: Push Docker image to Docker Registry
+        run:
+          docker push 160.30.136.119:5000/edu:latest
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Deploy to Production
+        uses: matheusvanzan/sshpass-action@v2
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          user: ${{ secrets.SSH_USER }}
+          port: 22
+          pass: ${{ secrets.SSH_PASSWORD }}
+          run: |
+            cd edu-communication
+            docker compose up -d 
+
