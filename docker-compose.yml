@@ -1,10 +1,14 @@
-version: "3"
 services:
-  mongo:
-    image: mongo:latest
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
-      MONGO_INITDB_DATABASE: ${MONGO_DATABASE}
+  edu-communication:
+    build: .
+    container_name: edu-cm
+    restart: unless-stopped
     ports:
-      - '27017:27017'
+      - '3099:3099'
+    volumes:
+      - ./edu/logs:/logs
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20MB"
+        max-file: "5"
