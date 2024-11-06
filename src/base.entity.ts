@@ -1,6 +1,6 @@
-import { BaseEntity, CreateDateColumn, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { CreateDateColumn, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 
-export class ShareEntity extends BaseEntity {
+export class BaseEntity  {
  @PrimaryGeneratedColumn({
     type: 'int',
     name: 'id',
