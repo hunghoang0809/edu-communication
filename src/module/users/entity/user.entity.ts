@@ -1,10 +1,12 @@
 import { Column, Entity } from 'typeorm';
-import { ShareEntity } from '../../../base.entity';
+import { BaseEntity } from '../../../base.entity';
 
 @Entity('users')
-export class UserEntity extends ShareEntity {
-  @Column()
+export class User extends BaseEntity {
+  @Column({ unique: true })
   phone: string;
+  @Column()
+  name: string;
   @Column()
   password: string;
   @Column()

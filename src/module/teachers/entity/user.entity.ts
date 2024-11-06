@@ -1,8 +1,8 @@
 import { Column, Entity } from 'typeorm';
-import { ShareEntity } from '../../../base.entity';
+import { BaseEntity } from '../../../base.entity';
 
 @Entity('users')
-export class UserEntity extends ShareEntity {
+export class UserEntity extends BaseEntity {
   @Column()
   phone: string;
   @Column()
