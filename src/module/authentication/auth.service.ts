@@ -1,11 +1,12 @@
 import { BadRequestException, Inject, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { LoginDto } from './dto/Login.dto';
-import UsersService from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '../users/entity/user.entity';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { InjectRepository } from '@nestjs/typeorm';
+import * as process from 'node:process';
+
 
 @Injectable()
 export class AuthService {
@@ -15,13 +16,17 @@ export class AuthService {
     private readonly userRepository: Repository<User>
   ) {}
 
-  async generateToken(phone: string, role: string){
-    const payload = {phone: phone, role: role}
+  async generateToken(phone: string, role: string, username: string){
+    const payload = {phone: phone, role: role, username: username}
     return this.jwtService.sign(payload)
   }
 
   async validateUser(req: LoginDto){
-    const user = await this.userRepository.findOneBy({phone: req.phone})
+    const user = await this.userRepository.findOne({where: [
+        { phone: req.phoneOrUsername },
+        { username: req.phoneOrUsername },
+      ],});
+
     if(!user){
       throw new NotFoundException("Người dùng chưa được cấp tài khoản")
     }
@@ -36,7 +41,7 @@ export class AuthService {
 
   async login(req: LoginDto) {
     const user = await this.validateUser(req)
-    const token = await this.generateToken(user.phone, user.role)
+    const token = await this.generateToken(user.phone, user.role, user.username)
     return {
       data: {
         user: user,

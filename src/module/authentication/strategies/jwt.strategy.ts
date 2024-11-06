@@ -6,6 +6,7 @@ import { Injectable, UnauthorizedException } from "@nestjs/common"
 import { PassportStrategy } from "@nestjs/passport"
 
 import { AuthService } from "../auth.service"
+import * as process from 'node:process';
 
 
 @Injectable()

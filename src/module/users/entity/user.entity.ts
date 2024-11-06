@@ -5,8 +5,8 @@ import { BaseEntity } from '../../../base.entity';
 export class User extends BaseEntity {
   @Column({ unique: true })
   phone: string;
-  @Column()
-  name: string;
+  @Column({ unique: true })
+  username: string;
   @Column()
   password: string;
   @Column()

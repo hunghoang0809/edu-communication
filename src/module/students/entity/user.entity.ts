@@ -6,6 +6,8 @@ export class UserEntity extends BaseEntity {
   @Column()
   phone: string;
   @Column()
+  username: string;
+  @Column()
   password: string;
   @Column()
   role: string;
