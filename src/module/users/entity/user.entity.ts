@@ -1,5 +1,6 @@
-import { Column, Entity } from 'typeorm';
+import { Column, Entity, OneToOne } from 'typeorm';
 import { BaseEntity } from '../../../base.entity';
+import { Teacher } from '../../teachers/entity/teacher.entity';
 
 @Entity('users')
 export class User extends BaseEntity {
@@ -11,4 +12,6 @@ export class User extends BaseEntity {
   password: string;
   @Column()
   role: string;
+  @OneToOne(() => Teacher, (teacher) => teacher.user)
+  teacher: Teacher;
 }
