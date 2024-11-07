@@ -15,6 +15,7 @@ async function bootstrap() {
     .setDescription('The Edu Communication API description')
     .setVersion('1.0')
     .addTag('edu-communication')
+    .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
