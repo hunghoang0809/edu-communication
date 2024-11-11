@@ -1,7 +1,8 @@
-import { Column, Entity, JoinTable, ManyToOne, OneToMany } from "typeorm";
+import { Column, Entity, JoinColumn, JoinTable, ManyToOne, OneToMany, OneToOne } from "typeorm";
 import { BaseEntity } from '../../../base.entity';
 import { Class } from "../../classes/entity/class.entity";
 import { Subject } from "../../subjects/entity/subject.entity";
+import { User } from "../../users/entity/user.entity";
 
 @Entity('students')
 export class Student extends BaseEntity {
@@ -13,6 +14,9 @@ export class Student extends BaseEntity {
   classes: Class[];
   @OneToMany(() => Grade, (grade) => grade.student)
   grades: Grade[];
+  @OneToOne(() => User, (user) => user.student)
+  @JoinColumn()
+  user: User;
 }
 @Entity()
 export class Grade extends BaseEntity {

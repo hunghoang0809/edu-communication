@@ -6,10 +6,12 @@ export class CreateTeacherDto {
   @IsNotEmpty({message: "Họ và tên không được để trống"})
   name: string;
   @ApiProperty()
-  @IsNotEmpty()
+  @IsNotEmpty({message: "Id user không được để trống"})
   userId: number;
   @ApiProperty()
   subjectId: number;
+  @ApiProperty()
+  email: string;
 }
 
 export default CreateTeacherDto;

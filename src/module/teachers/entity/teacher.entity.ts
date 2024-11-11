@@ -8,10 +8,9 @@ import { Class } from "../../classes/entity/class.entity";
 export class Teacher extends BaseEntity {
   @Column()
   name: string;
-  @Column()
+  @Column({nullable: true})
   email: string;
   @OneToOne(() => User, (user) => user.teacher)
-  @JoinColumn()
   user: User;
   @ManyToOne(() => Subject, (subject) => subject.teachers)
   subject: Subject;

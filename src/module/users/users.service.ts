@@ -5,8 +5,7 @@ import { User } from "./entity/user.entity";
 import { CreateUserDto } from './dto/createUser.dto';
 import { FilterUserDto } from "./dto/filterUser.dto";
 import * as bcrypt from "bcrypt";
-import { filter } from "rxjs";
-import createUserDto from "../students/dto/createUser.dto";
+import {updateFilterPagination} from "../../query";
 import { classToPlain } from "class-transformer";
 
 @Injectable()
@@ -38,7 +37,7 @@ class UsersService {
 
 
   async list(req: FilterUserDto){
-     let filter = await this.updatePaginationFilter(req)
+     let filter = await updateFilterPagination(req)
     const whereCondition =req.keyword
       ? [
         { phone: Like(`%${req.keyword}%`) },
@@ -59,17 +58,7 @@ class UsersService {
     };
   }
 
-   async updatePaginationFilter(req: any){
-    if(!req.page || req.page == 0){
-      req.page = 1
-    }
-    if(!req.pageSize){
-      req.pageSize = 20;
-    }
-    req.startIndex = (req.page - 1) * req.pageSize;
 
-    return req
-  }
 
   async getById(id: number){
     const user = await this.userRepository.findOne({where:{id}})
