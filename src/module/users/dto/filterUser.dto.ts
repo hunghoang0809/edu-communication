@@ -11,5 +11,8 @@ export class FilterUserDto {
  @ApiPropertyOptional()
  @IsOptional()
   keyword: string;
+ @ApiPropertyOptional()
+ @IsOptional()
+  role: string;
 }
 

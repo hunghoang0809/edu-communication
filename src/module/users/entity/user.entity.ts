@@ -1,9 +1,10 @@
-import { Column, Entity, JoinColumn, OneToOne } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToMany, ManyToOne, OneToMany, OneToOne } from "typeorm";
 import { BaseEntity } from '../../../base.entity';
-import { Teacher } from '../../teachers/entity/teacher.entity';
 import { Exclude } from "class-transformer";
-import { Student } from "../../students/entity/student.entity";
 import { Role } from "../enum/role.enum";
+import { Class } from "../../classes/entity/class.entity";
+import { Subject } from "../../subjects/entity/subject.entity";
+import { Grade } from "../../students/entity/grade.entity";
 
 @Entity('users')
 export class User extends BaseEntity {
@@ -16,10 +17,16 @@ export class User extends BaseEntity {
   password: string;
   @Column({default: Role.ADMIN})
   role: string;
-  @OneToOne(() => Teacher, (teacher) => teacher.user)
-  @JoinColumn()
-  teacher: Teacher;
-  @OneToOne(() => Student, (student) => student.user)
-  @JoinColumn()
-  student: Student;
+  @Column()
+  fullName: string;
+  @Column({nullable: true})
+  email: string;
+  @ManyToMany(() => Class, (classes ) => classes.user)
+  classes: Class[];
+  @ManyToOne(() => Subject, (subject) => subject.teachers)
+  subject: Subject;
+  @OneToMany(() => Grade, (grade ) => grade.student)
+  grades: Grade[];
+  @Column({nullable: true})
+  birthDate: Date;
 }

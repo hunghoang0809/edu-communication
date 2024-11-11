@@ -14,19 +14,5 @@ import { FilterUserDto } from "../users/dto/filterUser.dto";
 export class TeachersController {
   constructor(private readonly teachersService: TeachersService) {}
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @ApiBearerAuth()
-  @Roles(Role.ADMIN)
-  @Post("")
-  public create(@Body() req: CreateTeacherDto) {
-    return this.teachersService.create(req)
-  }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @ApiBearerAuth()
-  @Roles(Role.ADMIN)
-  @Get("")
-  public findAll(@Query() req: FilterUserDto) {
-    return this.teachersService.list(req)
-  }
 }
