@@ -1,4 +1,11 @@
-import { BadRequestException, Inject, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+  UnauthorizedException
+} from "@nestjs/common";
 import { LoginDto } from './dto/Login.dto';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '../users/entity/user.entity';
@@ -30,6 +37,8 @@ export class AuthService {
     if(!user){
       throw new NotFoundException("Người dùng chưa được cấp tài khoản")
     }
+
+
     if (user && (await bcrypt.compare(req.password, user.password))) {
       const { password, ...result } = user;
       return result;
