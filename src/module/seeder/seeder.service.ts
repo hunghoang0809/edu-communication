@@ -23,7 +23,7 @@ export class InitDataService implements OnModuleInit {
 
       const users = [
         {
-          userName: 'admin',
+          username: 'admin',
           password: await bcrypt.hash('123456', 14),
           role: Role.ADMIN,
           phone: '',

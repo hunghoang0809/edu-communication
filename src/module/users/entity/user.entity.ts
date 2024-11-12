@@ -23,9 +23,9 @@ export class User extends BaseEntity {
   email: string;
   @ManyToMany(() => Class, (classes ) => classes.user)
   classes: Class[];
-  @ManyToOne(() => Subject, (subject) => subject.teachers)
+  @ManyToOne(() => Subject, (subject) => subject.users)
   subject: Subject;
-  @OneToMany(() => Grade, (grade ) => grade.student)
+  @OneToMany(() => Grade, (grade ) => grade.user)
   grades: Grade[];
   @Column({nullable: true})
   birthDate: Date;

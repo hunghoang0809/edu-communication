@@ -9,7 +9,7 @@ export class Subject extends BaseEntity {
   @Column()
   name: string;
   @OneToMany(() => User, (user) => user.subject)
-  teachers: User[];
+  users: User[];
   @ManyToMany(() => Class, (classEntity) => classEntity.subjects)
   classes: Class[];
   @OneToMany(() => Grade, (grade) => grade.subject)

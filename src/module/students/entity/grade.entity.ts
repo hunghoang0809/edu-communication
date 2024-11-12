@@ -10,7 +10,7 @@ export class Grade extends BaseEntity {
   score: number;
 
   @ManyToOne(() => User, (student) => student.grades)
-  student: User;
+  user: User;
 
   @ManyToOne(() => Subject, (subject) => subject.grades )
   subject: Subject;
