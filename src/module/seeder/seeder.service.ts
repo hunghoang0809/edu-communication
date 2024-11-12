@@ -6,12 +6,14 @@ import * as bcrypt from 'bcrypt';
 import { Role } from '../users/enum/role.enum';
 import { User } from '../users/entity/user.entity';
 import * as process from 'node:process';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class InitDataService implements OnModuleInit {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly configService: ConfigService,
   ) {}
 
   async onModuleInit() {
@@ -31,6 +33,7 @@ export class InitDataService implements OnModuleInit {
       console.log('Initial users have been added.');
     } else {
       console.log('Users already exist, skipping initial data.');
+
     }
   }
 }

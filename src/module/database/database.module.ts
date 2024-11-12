@@ -16,7 +16,7 @@ import * as process from 'node:process';
         database: configService.get<string>('DB_NAME'),
         entities: [__dirname + '/../**/*.entity{.ts,.js}'],
         timezone: 'Z',
-        synchronize: configService.get<boolean>('ENABLE_SYNC'),
+        synchronize: configService.get<string>('ENABLE_SYNC') === 'true',
       }),
       inject: [ConfigService],
     }),
