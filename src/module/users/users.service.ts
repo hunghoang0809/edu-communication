@@ -41,7 +41,8 @@ class UsersService {
     const whereCondition =req.keyword
       ? [
         { phone: Like(`%${req.keyword}%`) },
-        { username: Like(`%${req.keyword}%`) }
+        { username: Like(`%${req.keyword}%`) },
+        {role: req.role}
       ]
       : [];
       const skip = filter.startIndex
