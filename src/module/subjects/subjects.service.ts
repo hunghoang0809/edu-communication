@@ -1,10 +1,11 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Subject } from './entity/subject.entity';
 import { CreateSubjectDto } from './dto/createSubject.dto';
 import { UpdateSubjectDto } from './dto/updateSubject.dto';
 import { User } from '../users/entity/user.entity';
+import { AddSubjectToTeacherDto } from './dto/addSubjectToTeacher.dto';
 
 
 @Injectable()
@@ -60,5 +61,34 @@ export class SubjectService {
   async remove(id: number): Promise<void> {
     const subject = await this.findOne(id);
     await this.subjectRepository.remove(subject);
+  }
+
+  async addSubjectToTeacher(
+    addSubjectToTeacherDto: AddSubjectToTeacherDto,
+  ): Promise<User> {
+    const teacher = await this.userRepository.findOne({
+      where: { id: addSubjectToTeacherDto.teacherId, role: 'TEACHER' },
+      relations: ['subject'],
+    });
+
+    if (!teacher) {
+      throw new NotFoundException('Không tìm thâý giáo viên');
+    }
+
+    if (teacher.subject) {
+      throw new ConflictException('Giáo viên đã đăng kí dạy môn học này');
+    }
+
+    const subject = await this.subjectRepository.findOne({
+      where: { id: addSubjectToTeacherDto.subjectId },
+    });
+
+    if (!subject) {
+      throw new NotFoundException('Subject not found');
+    }
+
+    teacher.subject = subject;
+    await this.userRepository.save(teacher);
+    return teacher;
   }
 }
