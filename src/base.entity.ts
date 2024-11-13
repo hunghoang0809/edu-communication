@@ -1,4 +1,5 @@
 import { CreateDateColumn, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class BaseEntity  {
  @PrimaryGeneratedColumn({
@@ -13,6 +14,7 @@ export class BaseEntity  {
    name: 'created_at',
  })
   createdAt: Date;
+
  @UpdateDateColumn({
    type: 'timestamp',
    nullable: false,

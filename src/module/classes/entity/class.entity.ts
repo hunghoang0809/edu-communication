@@ -15,7 +15,7 @@ export class Class extends BaseEntity {
 
   @ManyToMany(() => User, (user) => user.classes)
   @JoinTable()
-  user: User;
+  user: User[];
 
   @ManyToMany(() => Subject, (subject) => subject.classes)
   @JoinTable()

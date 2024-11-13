@@ -40,11 +40,10 @@ class UsersService {
      let filter = await updateFilterPagination(req)
     const whereCondition =req.keyword
       ? [
-        { phone: Like(`%${req.keyword}%`) },
-        { username: Like(`%${req.keyword}%`) },
-        {role: req.role}
+        { phone: Like(`%${req.keyword}%`), role: req.role },
+        { username: Like(`%${req.keyword}%`),role: req.role },
       ]
-      : [];
+      : [{ role: req.role }];
       const skip = filter.startIndex
 
     const [users, total] = await this.userRepository.findAndCount({

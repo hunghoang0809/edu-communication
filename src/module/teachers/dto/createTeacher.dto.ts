@@ -15,7 +15,6 @@ export class CreateTeacherDto {
   @ApiProperty()
   @IsNotEmpty({message: "Tên đăng nhập không được để trống"})
   username: string;
-
 }
 
 export default CreateTeacherDto;

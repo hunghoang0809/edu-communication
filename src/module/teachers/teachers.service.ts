@@ -7,33 +7,41 @@ import { User } from "../users/entity/user.entity";
 import { Role } from "../users/enum/role.enum";
 import { FilterUserDto } from "../users/dto/filterUser.dto";
 import { updateFilterPagination } from "../../query";
-import { plainToClass } from "class-transformer";
+import { classToPlain, plainToClass } from 'class-transformer';
 
 @Injectable()
 class TeachersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-  ) {}
+  ) {
+  }
 
-  async list(req: FilterUserDto){
-    let filter = updateFilterPagination(req)
-    const skip = filter.startIndex
-    const usersWithTeacherInfo = await this.userRepository.createQueryBuilder('users')
-      .leftJoinAndSelect('users.teacher', 'teachers')
-      .where('users.role = :role', { role: Role.TEACHER })
-      .skip(skip)
-      .take(req.pageSize)
-      .getMany();
-    const sanitizedUsers = plainToClass(User, usersWithTeacherInfo);
-    return{
-       data: sanitizedUsers,
+  async getProfile(id: number) {
+    const teacher = await this.userRepository.findOne({ where: { role: Role.TEACHER, id: id } });
+    if (!teacher) {
+      throw new NotFoundException("Giáo viên không tồn tại");
+    }
+    return {
+      data: classToPlain(teacher),
     }
   }
+
+  async updateProfile(id: number, req: CreateTeacherDto) {
+    const teacher = await this.userRepository.findOne({ where: { role: Role.TEACHER, id: id } });
+    if (!teacher) {
+      throw new NotFoundException("Giáo viên không tồn tại");
+    }
+    await this.userRepository.update(id, req);
+    return {
+      statusCode: 200,
+      message: "Cập nhật thông tin giáo viên thành công",
+      data: null,
+      totalCount: null,
+    }
+  }
+
+
 }
-
-
-
-
 
 export default TeachersService;
