@@ -33,6 +33,19 @@ export class ClassService {
     }
 
     async create(createClassDto: CreateClassDto): Promise<Class> {
+        const existingClass = await this.classRepository.findOne({
+            where: {
+                name: createClassDto.name,
+                schoolYear: createClassDto.schoolYear,
+                gradeLevel: createClassDto.gradeLevel,
+            },
+        });
+
+        if (existingClass) {
+            throw new BadRequestException('Lớp học này đã tồn tại trong khối học và năm học này.');
+        }
+
+
         const newClass = this.classRepository.create(createClassDto);
         return this.classRepository.save(newClass);
     }

@@ -9,12 +9,16 @@ import CreateTeacherDto from "./dto/createTeacher.dto";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { FilterUserDto } from "../users/dto/filterUser.dto";
 import { User } from '../../utils/decorator/user.decorator';
+import { AddSubjectToTeacherDto } from '../subjects/dto/addSubjectToTeacher.dto';
+import { SubjectService } from '../subjects/subjects.service';
 
 @ApiTags("Teachers")
 @Controller('teacher')
 export class TeachersController {
-  constructor(private readonly teachersService: TeachersService) {
-  }
+  constructor(private readonly teachersService: TeachersService,
+              private readonly subjectService: SubjectService)
+  { }
+
 
   @Get("profile")
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -28,7 +32,7 @@ export class TeachersController {
   }
 
 
-  @Patch("")
+  @Patch("update-profile")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.TEACHER)
   @ApiBearerAuth()
@@ -39,7 +43,12 @@ export class TeachersController {
     return this.teachersService.updateProfile(userId, req);
   }
 
-  
+  @Post('add-subject')
+  async addSubjectToTeacher(
+    @Body() addSubjectToTeacherDto: AddSubjectToTeacherDto,
+  ) {
+    return this.subjectService.addSubjectToTeacher(addSubjectToTeacherDto);
+  }
 
 
 }

@@ -5,6 +5,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { CreateSubjectDto } from './dto/createSubject.dto';
 import { UpdateSubjectDto } from './dto/updateSubject.dto';
 import { SubjectService } from './subjects.service';
+import { AddSubjectToTeacherDto } from './dto/addSubjectToTeacher.dto';
 
 @ApiTags('subjects')
 @Controller('subjects')
@@ -43,4 +44,6 @@ export class SubjectController {
   async remove(@Param('id') id: number) {
     return this.subjectService.remove(id);
   }
+
+
 }
