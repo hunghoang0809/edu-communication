@@ -23,8 +23,8 @@ export class AuthService {
     private readonly userRepository: Repository<User>
   ) {}
 
-  async generateToken(phone: string, role: string, username: string){
-    const payload = {phone: phone, role: role, username: username}
+  async generateToken(id: number, phone: string, role: string, username: string){
+    const payload = {id: id,  phone: phone, role: role, username: username}
     return this.jwtService.sign(payload)
   }
 
@@ -50,7 +50,7 @@ export class AuthService {
 
   async login(req: LoginDto) {
     const user = await this.validateUser(req)
-    const token = await this.generateToken(user.phone, user.role, user.username)
+    const token = await this.generateToken(user.id, user.phone, user.role, user.username)
     return {
       data: {
         user: user,
