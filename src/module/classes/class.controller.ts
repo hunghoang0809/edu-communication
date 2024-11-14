@@ -5,7 +5,7 @@ import { ClassService } from './class.service';
 import { ApiTags } from '@nestjs/swagger';
 import { AddStudentsToClassDto } from './dto/AddStudents.dto';
 
-@ApiTags('classes')
+@ApiTags('Classes')
 @Controller('classes')
 export class ClassController {
   constructor(private readonly classesService: ClassService) {}

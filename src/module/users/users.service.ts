@@ -7,12 +7,18 @@ import { FilterUserDto } from "./dto/filterUser.dto";
 import * as bcrypt from "bcrypt";
 import {updateFilterPagination} from "../../query";
 import { classToPlain } from "class-transformer";
+import { UpdateUserDto } from './dto/updateUser.dto';
+import { Role } from './enum/role.enum';
+import { Subject } from '../subjects/entity/subject.entity';
+
 
 @Injectable()
 class UsersService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(Subject)
+    private subjectRepository: Repository<Subject>,
   ) {}
 
   async create(req: CreateUserDto){
@@ -23,14 +29,30 @@ class UsersService {
     if(user){
       throw new BadRequestException("Tên đăng nhập hoặc số điện thoại đã tồn tại")
     }
+
+    if (!user) {
+      throw new NotFoundException('Người dùng không tồn tại.');
+    }
+
     let {password, ...res } = req
     const pass =await bcrypt.hash(password, 14)
-    const newUser = this.userRepository.create({ password: pass, ...res }); // Create the entity instance
+    const newUser = this.userRepository.create({ password: pass, ...res });
+    if(req.subjectId && req.role !== Role.TEACHER){
+      throw new BadRequestException('Chỉ giáo viên mới được phân công môn học');
+    }
+    else if (req.role === Role.TEACHER && req.subjectId) {
+      const subject = await this.subjectRepository.findOneById(req.subjectId);
+      if (!subject) {
+        throw new NotFoundException('Môn học không tồn tại');
+      }
+
+      newUser.subject = subject;
+    }
     await this.userRepository.save(newUser);
     return {
       statusCode: 200,
       message: "Tạo thành công người dùng",
-      data: null,  // Include the created user data in the response
+      data: null,
       totalCount: null
     }
   }
@@ -68,17 +90,49 @@ class UsersService {
     }
   }
 
-  async update(id: number, request: CreateUserDto){
-    const user = await this.userRepository.update(id, request)
-    if(!user){
-      throw new NotFoundException("")
+  async update(id: number, request: UpdateUserDto) {
+    const { phone, username } = request;
+
+    const existingUserByUsername = await this.userRepository.findOne({
+      where: { username },
+    });
+
+    if (existingUserByUsername && existingUserByUsername.id !== id) {
+      throw new BadRequestException('Tên đăng nhập đã tồn tại.');
     }
-   return {
+
+    const existingUserByPhone = await this.userRepository.findOne({
+      where: { phone },
+    });
+
+    if (existingUserByPhone && existingUserByPhone.id !== id) {
+      throw new BadRequestException('Số điện thoại đã tồn tại.');
+    }
+
+    const user = await this.userRepository.findOne({ where: { id }, relations: ['subject'] });
+
+    if (!user) {
+      throw new NotFoundException('Người dùng không tồn tại.');
+    }
+    if (user.role === Role.TEACHER && request.subjectId) {
+      const subject = await this.subjectRepository.findOneById(request.subjectId);
+      if (!subject) {
+        throw new NotFoundException('Môn học không tồn tại');
+      }
+
+      user.subject = subject;
+    }
+
+    Object.assign(user, request);
+    await this.userRepository.save(user);
+
+    return {
       statusCode: 200,
-     message: "Cập nhật người dùng thành công",
-     data: null,
-   }
-}
+      message: 'Cập nhật người dùng thành công',
+      data: user,
+    };
+  }
+
 
 async delete(id: number){
     const user = await this.userRepository.delete(id)

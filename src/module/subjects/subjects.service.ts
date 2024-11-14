@@ -76,7 +76,7 @@ export class SubjectService {
     }
 
     if (teacher.subject) {
-      throw new ConflictException('Giáo viên đã đăng kí dạy môn học này');
+      throw new ConflictException('Giáo viên giáo viên chỉ được đăng kí dạy 1 môn');
     }
 
     const subject = await this.subjectRepository.findOne({
