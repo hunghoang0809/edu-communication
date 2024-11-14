@@ -8,12 +8,15 @@ import { Role } from "../users/enum/role.enum";
 import { FilterUserDto } from "../users/dto/filterUser.dto";
 import { updateFilterPagination } from "../../query";
 import { classToPlain, plainToClass } from 'class-transformer';
+import { Class } from '../classes/entity/class.entity';
 
 @Injectable()
 class TeachersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Class)
+    private readonly classRepository: Repository<Class>,
   ) {
   }
 
@@ -39,6 +42,21 @@ class TeachersService {
       data: null,
       totalCount: null,
     }
+  }
+
+  async getTeacherClasses(teacherId: number): Promise<any> {
+    const teacher = await this.userRepository.findOne({
+      where: { id: teacherId },
+      relations: ['classes'],  // Liên kết với các lớp học của giáo viên
+    });
+
+    if (!teacher) {
+      return {
+        data: null
+      };
+    }
+
+    return {data: teacher.classes};  // Trả về danh sách lớp học mà giáo viên dạy
   }
 
 

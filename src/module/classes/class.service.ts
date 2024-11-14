@@ -32,7 +32,7 @@ export class ClassService {
         return classEntity;
     }
 
-    async create(createClassDto: CreateClassDto): Promise<Class> {
+    async create(createClassDto: CreateClassDto): Promise<any> {
         const existingClass = await this.classRepository.findOne({
             where: {
                 name: createClassDto.name,
@@ -47,7 +47,13 @@ export class ClassService {
 
 
         const newClass = this.classRepository.create(createClassDto);
-        return this.classRepository.save(newClass);
+        this.classRepository.save(newClass);
+        return {
+            statusCode: 200,
+            message: "Tạo lớp học thành công",
+            data: null,
+            totalCount: null
+         }
     }
 
     async update(id: number, updateClassDto: UpdateClassDto): Promise<Class> {
