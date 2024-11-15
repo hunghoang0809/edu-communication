@@ -30,9 +30,6 @@ class UsersService {
       throw new BadRequestException("Tên đăng nhập hoặc số điện thoại đã tồn tại")
     }
 
-    if (!user) {
-      throw new NotFoundException('Người dùng không tồn tại.');
-    }
 
     let {password, ...res } = req
     const pass =await bcrypt.hash(password, 14)
