@@ -7,6 +7,10 @@ import { UpdateClassDto } from './dto/udpateClass.dto';
 import { User } from '../users/entity/user.entity';
 import { Role } from '../users/enum/role.enum';
 import { AddStudentsToClassDto } from './dto/AddStudents.dto';
+import { FilterUserDto } from '../users/dto/filterUser.dto';
+import { FilterClassDto } from './dto/filterClass.dto';
+import { updateFilterPagination } from '../../query';
+import { classToPlain } from 'class-transformer';
 
 @Injectable()
 export class ClassService {
@@ -17,11 +21,18 @@ export class ClassService {
       private readonly userRepository: Repository<User>,
     ) {}
 
-    async findAll(): Promise<Class[]> {
-        return this.classRepository.find({ relations: ['user', 'subjects'] });
+    async findAll(filter: any) {
+        filter = await updateFilterPagination(filter)
+        const skip = filter.startIndex
+        const classess = await this.classRepository.find({skip,
+            take: filter.pageSize})
+        return {
+            data: classess,
+            totalCount: await this.classRepository.count()
+        }
     }
 
-    async findOne(id: number): Promise<Class> {
+    async findOne(id: number) {
         const classEntity = await this.classRepository.findOne({
             where: { id },
             relations: ['user', 'subjects'],
@@ -29,7 +40,13 @@ export class ClassService {
         if (!classEntity) {
             throw new NotFoundException(`Class with ID ${id} not found`);
         }
-        return classEntity;
+        const students = classEntity.user.filter((user) => user.role === Role.STUDENT);
+        return {
+            data: {
+                ...classEntity,
+               user: classToPlain(students),
+            }
+        };
     }
 
     async create(createClassDto: CreateClassDto): Promise<any> {
@@ -56,15 +73,26 @@ export class ClassService {
          }
     }
 
-    async update(id: number, updateClassDto: UpdateClassDto): Promise<Class> {
+    async update(id: number, updateClassDto: UpdateClassDto) {
         await this.classRepository.update(id, updateClassDto);
-        return this.findOne(id);
+        return {
+            statusCode: 200,
+            message: 'Cập nhật lớp học thành công',
+            data: null,
+            totalCount: null,
+        }
     }
 
-    async remove(id: number): Promise<void> {
+    async remove(id: number) {
         const result = await this.classRepository.delete(id);
         if (result.affected === 0) {
             throw new NotFoundException(`Class with ID ${id} not found`);
+        }
+        return {
+            statusCode: 200,
+            message: 'Xóa lớp học thành công',
+            data: null,
+            totalCount: null,
         }
     }
 
@@ -85,7 +113,7 @@ export class ClassService {
 
 
     async addStudentsToClass(classId: number, addStudentsToClassDto: AddStudentsToClassDto) {
-        const classEntity = await this.classRepository.findOne({ where: { id: classId }, relations: ['students'] });
+        const classEntity = await this.classRepository.findOne({ where: { id: classId }, relations: ['user'] });
 
         if (!classEntity) {
             throw new NotFoundException(`Class with ID ${classId} not found`);
@@ -112,7 +140,12 @@ export class ClassService {
         classEntity.user = [...classEntity.user, ...students.filter(student => !classEntity.user.includes(student))];
 
         await this.classRepository.save(classEntity);
-        return classEntity;
+        return {
+            statusCode: 200,
+            message: 'Thêm học sinh vào lớp học thành công',
+            data: null,
+            totalCount: null,
+        };
     }
 
 

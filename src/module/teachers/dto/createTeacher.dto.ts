@@ -12,9 +12,6 @@ export class CreateTeacherDto {
   email: string;
   @ApiProperty()
   phone: string;
-  @ApiProperty()
-  @IsNotEmpty({message: "Tên đăng nhập không được để trống"})
-  username: string;
 }
 
 export default CreateTeacherDto;

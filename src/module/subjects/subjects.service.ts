@@ -34,12 +34,10 @@ export class SubjectService {
     return await this.subjectRepository.save(newSubject);
   }
 
-  // Lấy tất cả môn học
   async findAll(): Promise<Subject[]> {
     return this.subjectRepository.find();
   }
 
-  // Lấy môn học theo ID
   async findOne(id: number): Promise<Subject> {
     const subject = await this.subjectRepository.findOneById(id);
     if (!subject) {

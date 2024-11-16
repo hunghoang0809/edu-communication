@@ -1,9 +1,14 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { CreateClassDto } from './dto/createClass.dto';
 import { UpdateClassDto } from './dto/udpateClass.dto';
 import { ClassService } from './class.service';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AddStudentsToClassDto } from './dto/AddStudents.dto';
+import { JwtAuthGuard } from '../../utils/guard/jwt.guard';
+import { RolesGuard } from '../../utils/guard/role.guard';
+import { Role } from '../users/enum/role.enum';
+import { Roles } from '../../utils/decorator/role.decorator';
+import { FilterClassDto } from './dto/filterClass.dto';
 
 @ApiTags('Classes')
 @Controller('classes')
@@ -11,31 +16,49 @@ export class ClassController {
   constructor(private readonly classesService: ClassService) {}
 
   @Get()
-  async findAll() {
-    return this.classesService.findAll();
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  async findAll(@Query() filter: FilterClassDto) {
+    return this.classesService.findAll(filter);
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
   async findOne(@Param('id') id: number) {
     return this.classesService.findOne(id);
   }
 
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
   async create(@Body() createClassDto: CreateClassDto) {
     return this.classesService.create(createClassDto);
   }
 
   @Put(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
   async update(@Param('id') id: number, @Body() updateClassDto: UpdateClassDto) {
     return this.classesService.update(id, updateClassDto);
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
   async remove(@Param('id') id: number) {
     return this.classesService.remove(id);
   }
 
   @Post(':classId/students/')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
   async addStudentToClass(
     @Param('classId', ParseIntPipe) classId: number,
     @Body() addStudentsToClassDto: AddStudentsToClassDto,
