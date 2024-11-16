@@ -21,7 +21,7 @@ class TeachersService {
   }
 
   async getProfile(id: number) {
-    const teacher = await this.userRepository.findOne({ where: { role: Role.TEACHER, id: id } });
+    const teacher = await this.userRepository.findOne({ where: { role: Role.TEACHER, id: id }, relations: ['subject', 'classes'] });
     if (!teacher) {
       throw new NotFoundException("Giáo viên không tồn tại");
     }

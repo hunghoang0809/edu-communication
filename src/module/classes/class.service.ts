@@ -21,30 +21,52 @@ export class ClassService {
       private readonly userRepository: Repository<User>,
     ) {}
 
-    async findAll(filter: any) {
+    async findAll(filter: any, userRole: Role) {
         filter = await updateFilterPagination(filter)
         const skip = filter.startIndex
-        const classess = await this.classRepository.find({skip,
-            take: filter.pageSize})
-        return {
-            data: classess,
-            totalCount: await this.classRepository.count()
+        if (userRole === 'admin') {
+            const classes = await this.classRepository.find({
+                skip,
+                take: filter.pageSize,
+            });
+            const totalCount = await this.classRepository.count();
+
+            return {
+                data: classes,
+                totalCount: totalCount
+            };
+        }else{
+            const queryBuilder = this.classRepository.createQueryBuilder('class')
+              .leftJoinAndSelect('class.user', 'user') // Thêm mối quan hệ với bảng user
+              .where('user.id = :userId', { userId: filter.userId }) // Filter theo userId
+              .skip(skip)
+              .take(filter.pageSize);
+            const classes = await queryBuilder.getMany();
+            const totalCount = await queryBuilder.getCount();
+            return {
+                data: classes,
+                totalCount: totalCount
+            }
         }
+
+
     }
 
     async findOne(id: number) {
         const classEntity = await this.classRepository.findOne({
             where: { id },
-            relations: ['user', 'subjects'],
+            relations: ['user','subjects'],
         });
         if (!classEntity) {
             throw new NotFoundException(`Class with ID ${id} not found`);
         }
         const students = classEntity.user.filter((user) => user.role === Role.STUDENT);
+        const teachers = classEntity.user.filter((user) => user.role === Role.TEACHER);
         return {
             data: {
                 ...classEntity,
                user: classToPlain(students),
+                teacher: classToPlain(teachers),
             }
         };
     }
@@ -112,21 +134,21 @@ export class ClassService {
     }
 
 
-    async addStudentsToClass(classId: number, addStudentsToClassDto: AddStudentsToClassDto) {
-        const classEntity = await this.classRepository.findOne({ where: { id: classId }, relations: ['user'] });
+    async addStudentsToClass( request: AddStudentsToClassDto) {
+        const classEntity = await this.classRepository.findOne({ where: { id: request.classId }, relations: ['user'] });
 
         if (!classEntity) {
-            throw new NotFoundException(`Class with ID ${classId} not found`);
+            throw new NotFoundException(`Class with ID ${request.classId} not found`);
         }
 
         const students = await this.userRepository.find({
             where: {
-                id: In(addStudentsToClassDto.studentIds),
+                id: In(request.studentIds),
                 role: Role.STUDENT,
             },
             relations: ['classes'],
         });
-        if (students.length !== addStudentsToClassDto.studentIds.length) {
+        if (students.length !== request.studentIds.length) {
             throw new NotFoundException('Some students not found');
         }
 

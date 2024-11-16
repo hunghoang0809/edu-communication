@@ -9,6 +9,7 @@ import { RolesGuard } from '../../utils/guard/role.guard';
 import { Role } from '../users/enum/role.enum';
 import { Roles } from '../../utils/decorator/role.decorator';
 import { FilterClassDto } from './dto/filterClass.dto';
+import { User } from '../../utils/decorator/user.decorator';
 
 @ApiTags('Classes')
 @Controller('classes')
@@ -16,16 +17,14 @@ export class ClassController {
   constructor(private readonly classesService: ClassService) {}
 
   @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  async findAll(@Query() filter: FilterClassDto) {
-    return this.classesService.findAll(filter);
+  async findAll(@Query() filter: FilterClassDto, @User('role') userRole: Role) {
+    return this.classesService.findAll(filter, userRole);
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   async findOne(@Param('id') id: number) {
     return this.classesService.findOne(id);
@@ -55,14 +54,13 @@ export class ClassController {
     return this.classesService.remove(id);
   }
 
-  @Post(':classId/students/')
+  @Post('add-students')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @ApiBearerAuth()
   async addStudentToClass(
-    @Param('classId', ParseIntPipe) classId: number,
     @Body() addStudentsToClassDto: AddStudentsToClassDto,
   ) {
-    return await this.classesService.addStudentsToClass(classId, addStudentsToClassDto);
+    return await this.classesService.addStudentsToClass(addStudentsToClassDto);
   }
 }

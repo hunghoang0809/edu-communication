@@ -1,4 +1,4 @@
-import { IsArray, ArrayNotEmpty, IsUUID } from 'class-validator';
+import { IsArray, ArrayNotEmpty, IsUUID, IsNotEmpty } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class AddStudentsToClassDto {
@@ -6,4 +6,8 @@ export class AddStudentsToClassDto {
   @IsArray()
   @ArrayNotEmpty()
   studentIds: Number[];
+
+  @ApiProperty()
+  @IsNotEmpty({message:"Id lớp học không được để trống"})
+  classId: number
 }
