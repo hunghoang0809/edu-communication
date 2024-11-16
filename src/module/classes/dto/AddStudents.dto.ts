@@ -5,6 +5,5 @@ export class AddStudentsToClassDto {
   @ApiProperty()
   @IsArray()
   @ArrayNotEmpty()
-  @IsUUID('all', { each: true })
-  studentIds: number[];
+  studentIds: Number[];
 }
