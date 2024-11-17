@@ -6,11 +6,13 @@ import { CreateClassDto } from './dto/createClass.dto';
 import { UpdateClassDto } from './dto/udpateClass.dto';
 import { User } from '../users/entity/user.entity';
 import { Role } from '../users/enum/role.enum';
-import { AddStudentsToClassDto } from './dto/AddStudents.dto';
+import { AddStudentsToClassDto } from './dto/addStudents.dto';
 import { FilterUserDto } from '../users/dto/filterUser.dto';
 import { FilterClassDto } from './dto/filterClass.dto';
 import { updateFilterPagination } from '../../query';
 import { classToPlain } from 'class-transformer';
+import { AddTeachersDto } from './dto/addTeachers.dto';
+import { Subject } from '../subjects/entity/subject.entity';
 
 @Injectable()
 export class ClassService {
@@ -19,6 +21,8 @@ export class ClassService {
       private readonly classRepository: Repository<Class>,
       @InjectRepository(User)
       private readonly userRepository: Repository<User>,
+      @InjectRepository(Subject)
+      private readonly subjectRepository: Repository<Subject>,
     ) {}
 
     async findAll(filter: any, userRole: Role) {
@@ -118,20 +122,76 @@ export class ClassService {
         }
     }
 
-    async addTeacherToClass(classId: number, userId: number): Promise<Class> {
+    async addTeachersToClass(req: AddTeachersDto): Promise<any> {
+        const { teachers, classId, isDelete } = req;
+
         const classEntity = await this.classRepository.findOne({
             where: { id: classId },
-            relations: ['user'],
+            relations: ['user', 'subjects'],
         });
-        const teacher = await this.userRepository.findOne({ where: { id: userId, role:Role.TEACHER } });
 
-        if (!classEntity || !teacher) {
-            throw new Error('Class or teacher not found');
+        if (!classEntity) {
+            throw new NotFoundException(`Lớp học với ID ${classId} không tồn tại`);
         }
 
-        classEntity.user.push(teacher);
-        return await this.classRepository.save(classEntity);
+        for (const teacherDto of teachers) {
+            const teacher = await this.userRepository.findOne({
+                where: { id: teacherDto.teacherId, role: Role.TEACHER },
+                relations: ['subject', 'classes'],
+            });
+
+            if (!teacher) {
+                throw new BadRequestException(
+                  `Người dùng với ID ${teacherDto.teacherId} không phải là giáo viên hoặc không tồn tại`
+                );
+            }
+
+            const subject = await this.subjectRepository.findOne({
+                where: { id: teacherDto.subjectId },
+            });
+
+            if (!subject) {
+                throw new NotFoundException(`Môn học với ID ${teacherDto.subjectId} không tồn tại`);
+            }
+
+            const existingTeacher = classEntity.user.find(
+              (user) =>
+                user.id === teacherDto.teacherId &&
+                user.subject.id === teacherDto.subjectId
+            );
+
+            if (existingTeacher && !isDelete) {
+                throw new BadRequestException(
+                  `Giáo viên với ID ${teacherDto.teacherId} đã được gán vào lớp học này với môn học này`
+                );
+            }
+
+            if (isDelete) {
+                classEntity.user = classEntity.user.filter(
+                  (user) => user.id !== teacherDto.teacherId
+                );
+                classEntity.subjects = classEntity.subjects.filter(
+                  (sub) => sub.id !== teacherDto.subjectId
+                );
+            } else {
+                classEntity.user.push(teacher);
+                if (!classEntity.subjects.find((sub) => sub.id === subject.id)) {
+                    classEntity.subjects.push(subject);
+                }
+            }
+        }
+
+        await this.classRepository.save(classEntity);
+
+        return {
+            statusCode: 200,
+            message: isDelete
+              ? 'Xóa giáo viên và môn học khỏi lớp học thành công'
+              : 'Thêm giáo viên và môn học vào lớp học thành công',
+            data: null,
+        };
     }
+
 
 
     async addStudentsToClass( request: AddStudentsToClassDto) {
