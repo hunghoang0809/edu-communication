@@ -63,7 +63,7 @@ export class SubjectService {
 
   async addSubjectToTeacher(
     addSubjectToTeacherDto: AddSubjectToTeacherDto,
-  ): Promise<User> {
+  ) {
     const teacher = await this.userRepository.findOne({
       where: { id: addSubjectToTeacherDto.teacherId, role: 'TEACHER' },
       relations: ['subject'],
@@ -82,11 +82,15 @@ export class SubjectService {
     });
 
     if (!subject) {
-      throw new NotFoundException('Subject not found');
+      throw new NotFoundException('Không tìm thấy môn học');
     }
 
     teacher.subject = subject;
     await this.userRepository.save(teacher);
-    return teacher;
+    return {
+      statusCode: 200,
+      data: teacher,
+      message: "Thêm môn học cho giáo viên thành công"
+    };
   }
 }

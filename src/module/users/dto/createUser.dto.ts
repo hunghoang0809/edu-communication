@@ -18,6 +18,8 @@ export class CreateUserDto {
   fullName: string;
   @ApiProperty()
   email: string;
+  @ApiProperty()
+  birthDate: Date;
   @ApiPropertyOptional()
   @IsOptional()
   subjectId: number;
