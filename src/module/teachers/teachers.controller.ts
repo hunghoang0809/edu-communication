@@ -44,7 +44,7 @@ export class TeachersController {
     return this.teachersService.updateProfile(userId, req);
   }
 
-  @Patch("add-class/:id")
+  @Patch("admin/add-class/:id")
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
