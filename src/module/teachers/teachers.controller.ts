@@ -11,12 +11,12 @@ import { FilterUserDto } from "../users/dto/filterUser.dto";
 import { User } from '../../utils/decorator/user.decorator';
 import { AddSubjectToTeacherDto } from '../subjects/dto/addSubjectToTeacher.dto';
 import { SubjectService } from '../subjects/subjects.service';
+import AddTeacherClassDto from './dto/addTeacherClass.dto';
 
 @ApiTags("Teachers")
 @Controller('teacher')
 export class TeachersController {
-  constructor(private readonly teachersService: TeachersService,
-              private readonly subjectService: SubjectService)
+  constructor(private readonly teachersService: TeachersService)
   { }
 
 
@@ -44,6 +44,15 @@ export class TeachersController {
     return this.teachersService.updateProfile(userId, req);
   }
 
-
+  @Patch("admin/add-class/:id")
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  public async addTeacherToClass(
+    @Param('id') userId: number,
+    @Body() req: AddTeacherClassDto
+  ) {
+    return this.teachersService.addTeacherToClass(userId, req);
+  }
 
 }
