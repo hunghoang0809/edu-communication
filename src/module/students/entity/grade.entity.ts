@@ -6,15 +6,21 @@ import { User } from "../../users/entity/user.entity";
 
 @Entity()
 export class Grade extends BaseEntity {
-  @Column('decimal', { precision: 5, scale: 2 })
-  score: number;
+  @Column('decimal', { precision: 5, scale: 2, nullable: true })
+  scoreFactor1: number;
+
+  @Column('decimal', { precision: 5, scale: 2, nullable: true })
+  scoreFactor2: number;
+
+  @Column('decimal', { precision: 5, scale: 2, nullable: true })
+  scoreFactor3: number;
 
   @ManyToOne(() => User, (student) => student.grades)
   user: User;
 
-  @ManyToOne(() => Subject, (subject) => subject.grades )
-  subject: Subject;
+  @Column()
+  subject: string
 
-  @ManyToOne(() => Class, (classEntity) => classEntity.id)
-  class: Class;
+  @Column()
+  class: string
 }

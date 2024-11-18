@@ -14,5 +14,7 @@ export class FilterClassDto {
   @ApiPropertyOptional()
   @IsOptional()
   userId: number
+  @ApiPropertyOptional()
+  subjectId: number
 }
 

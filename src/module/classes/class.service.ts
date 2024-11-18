@@ -41,8 +41,9 @@ export class ClassService {
             };
         }else{
             const queryBuilder = this.classRepository.createQueryBuilder('class')
-              .leftJoinAndSelect('class.user', 'user') // Thêm mối quan hệ với bảng user
-              .where('user.id = :userId', { userId: filter.userId }) // Filter theo userId
+              .leftJoinAndSelect('class.user', 'user')
+              .where('user.id = :userId', { userId: filter.userId })
+              .andWhere('user.subjectId != :subjectId OR user.subjectId IS NULL', { subjectId: filter.subjectId })
               .skip(skip)
               .take(filter.pageSize);
             const classes = await queryBuilder.getMany();
@@ -65,49 +66,165 @@ export class ClassService {
             throw new NotFoundException(`Class with ID ${id} not found`);
         }
         const students = classEntity.user.filter((user) => user.role === Role.STUDENT);
-        const teachers = classEntity.user.filter((user) => user.role === Role.TEACHER);
         return {
             data: {
                 ...classEntity,
                user: classToPlain(students),
-                teacher: classToPlain(teachers),
+                homeroomTeacher: classEntity.homeroomTeacher ? classEntity.homeroomTeacher.id : null,
             }
         };
     }
 
-    async create(createClassDto: CreateClassDto): Promise<any> {
+    async create(req: CreateClassDto): Promise<any> {
+        const { name, schoolYear, studentIds, gradeLevel, teacherId } = req;
+
+        // Kiểm tra lớp học đã tồn tại
         const existingClass = await this.classRepository.findOne({
             where: {
-                name: createClassDto.name,
-                schoolYear: createClassDto.schoolYear,
-                gradeLevel: createClassDto.gradeLevel,
+                name,
+                schoolYear,
+                gradeLevel,
             },
+            relations: ['user'],
         });
 
         if (existingClass) {
             throw new BadRequestException('Lớp học này đã tồn tại trong khối học và năm học này.');
         }
 
+        // Lấy danh sách học sinh từ studentIds
+        const students = await this.userRepository.find({
+            where: { id: In(studentIds), role: Role.STUDENT },
+            relations: ['classes'],
+        });
 
-        const newClass = this.classRepository.create(createClassDto);
-        this.classRepository.save(newClass);
+        if (students.length !== studentIds.length) {
+            throw new NotFoundException('Một số học sinh không tồn tại');
+        }
+
+        // Kiểm tra nếu học sinh đã được thêm vào lớp khác trong cùng năm học
+        const studentsInOtherClasses = students.filter(
+          (student) =>
+            student.classes.some((existingClass) => existingClass.schoolYear === schoolYear)
+        );
+
+        if (studentsInOtherClasses.length > 0) {
+            const studentIds = studentsInOtherClasses.map((student) => student.id).join(', ');
+            throw new BadRequestException(`Học sinh với ID ${studentIds} đã được thêm vào lớp khác`);
+        }
+
+        // Kiểm tra giáo viên chủ nhiệm
+        let homeroomTeacher: User | null = null;
+        if (teacherId) {
+            homeroomTeacher = await this.userRepository.findOne({
+                where: { id: teacherId, role: Role.TEACHER },
+                relations: ['homeroomClass'],
+            });
+
+            if (!homeroomTeacher) {
+                throw new NotFoundException(`Giáo viên chủ nhiệm với ID ${teacherId} không tồn tại`);
+            }
+
+            if (homeroomTeacher.homeroomClass) {
+                throw new BadRequestException(`Giáo viên với ID ${teacherId} đã là chủ nhiệm lớp khác`);
+            }
+        }
+
+        // Tạo lớp học mới và thêm danh sách học sinh
+        const newClass = this.classRepository.create({ name, schoolYear, gradeLevel });
+        newClass.user = students; // Thêm học sinh vào lớp học
+        newClass.homeroomTeacher = homeroomTeacher; // Thêm giáo viên chủ nhiệm nếu có
+
+        // Lưu lớp học mới vào cơ sở dữ liệu
+        await this.classRepository.save(newClass);
+
         return {
             statusCode: 200,
-            message: "Tạo lớp học thành công",
-            data: null,
-            totalCount: null
-         }
+            message: 'Tạo lớp học thành công',
+            data: newClass,
+        };
     }
 
-    async update(id: number, updateClassDto: UpdateClassDto) {
-        await this.classRepository.update(id, updateClassDto);
+
+
+
+    async update(id: number, updateClassDto: UpdateClassDto): Promise<any> {
+        const { name, schoolYear, studentIds, teacherId } = updateClassDto;
+
+        const classEntity = await this.classRepository.findOne({
+            where: { id },
+            relations: ['user', 'homeroomTeacher'],
+        });
+
+        if (!classEntity) {
+            throw new NotFoundException(`Lớp học với ID ${id} không tồn tại`);
+        }
+
+        classEntity.name = name;
+        classEntity.schoolYear = schoolYear;
+
+        if (studentIds.length === 0) {
+            classEntity.user = [];
+        } else {
+            const students = await this.userRepository.find({
+                where: {
+                    id: In(studentIds),
+                    role: Role.STUDENT,
+                },
+                relations: ['classes'],
+            });
+
+            if (students.length !== studentIds.length) {
+                throw new NotFoundException('Một số học sinh không tồn tại');
+            }
+
+            const studentsInOtherClasses = students.filter(
+              (student) =>
+                student.classes.some((existingClass) => existingClass.id !== id)
+            );
+
+            if (studentsInOtherClasses.length > 0) {
+                const conflictingStudentIds = studentsInOtherClasses.map((student) => student.id).join(', ');
+                throw new BadRequestException(`Học sinh với ID ${conflictingStudentIds} đã được thêm vào lớp khác`);
+            }
+
+            classEntity.user = students;
+        }
+
+        if (teacherId) {
+            const teacher = await this.userRepository.findOne({
+                where: {
+                    id: teacherId,
+                    role: Role.TEACHER,
+                },
+                relations: ['homeroomClass'],
+            });
+
+            if (!teacher) {
+                throw new NotFoundException(`Giáo viên với ID ${teacherId} không tồn tại`);
+            }
+
+
+            if (teacher.homeroomClass && teacher.homeroomClass.id !== id) {
+                throw new BadRequestException(`Giáo viên này đã là giáo viên chủ nhiệm của lớp khác`);
+            }
+
+
+            classEntity.homeroomTeacher = teacher;
+        } else {
+            classEntity.homeroomTeacher = null;
+        }
+
+        await this.classRepository.save(classEntity);
+
         return {
             statusCode: 200,
             message: 'Cập nhật lớp học thành công',
             data: null,
-            totalCount: null,
-        }
+        };
     }
+
+
 
     async remove(id: number) {
         const result = await this.classRepository.delete(id);
@@ -122,113 +239,6 @@ export class ClassService {
         }
     }
 
-    async addTeachersToClass(req: AddTeachersDto): Promise<any> {
-        const { teachers, classId, isDelete } = req;
-
-        const classEntity = await this.classRepository.findOne({
-            where: { id: classId },
-            relations: ['user', 'subjects'],
-        });
-
-        if (!classEntity) {
-            throw new NotFoundException(`Lớp học với ID ${classId} không tồn tại`);
-        }
-
-        for (const teacherDto of teachers) {
-            const teacher = await this.userRepository.findOne({
-                where: { id: teacherDto.teacherId, role: Role.TEACHER },
-                relations: ['subject', 'classes'],
-            });
-
-            if (!teacher) {
-                throw new BadRequestException(
-                  `Người dùng với ID ${teacherDto.teacherId} không phải là giáo viên hoặc không tồn tại`
-                );
-            }
-
-            const subject = await this.subjectRepository.findOne({
-                where: { id: teacherDto.subjectId },
-            });
-
-            if (!subject) {
-                throw new NotFoundException(`Môn học với ID ${teacherDto.subjectId} không tồn tại`);
-            }
-
-            const existingTeacher = classEntity.user.find(
-              (user) =>
-                user.id === teacherDto.teacherId &&
-                user.subject.id === teacherDto.subjectId
-            );
-
-            if (existingTeacher && !isDelete) {
-                throw new BadRequestException(
-                  `Giáo viên với ID ${teacherDto.teacherId} đã được gán vào lớp học này với môn học này`
-                );
-            }
-
-            if (isDelete) {
-                classEntity.user = classEntity.user.filter(
-                  (user) => user.id !== teacherDto.teacherId
-                );
-                classEntity.subjects = classEntity.subjects.filter(
-                  (sub) => sub.id !== teacherDto.subjectId
-                );
-            } else {
-                classEntity.user.push(teacher);
-                if (!classEntity.subjects.find((sub) => sub.id === subject.id)) {
-                    classEntity.subjects.push(subject);
-                }
-            }
-        }
-
-        await this.classRepository.save(classEntity);
-
-        return {
-            statusCode: 200,
-            message: isDelete
-              ? 'Xóa giáo viên và môn học khỏi lớp học thành công'
-              : 'Thêm giáo viên và môn học vào lớp học thành công',
-            data: null,
-        };
-    }
-
-
-
-    async addStudentsToClass( request: AddStudentsToClassDto) {
-        const classEntity = await this.classRepository.findOne({ where: { id: request.classId }, relations: ['user'] });
-
-        if (!classEntity) {
-            throw new NotFoundException(`Class with ID ${request.classId} not found`);
-        }
-
-        const students = await this.userRepository.find({
-            where: {
-                id: In(request.studentIds),
-                role: Role.STUDENT,
-            },
-            relations: ['classes'],
-        });
-        if (students.length !== request.studentIds.length) {
-            throw new NotFoundException('Some students not found');
-        }
-
-        for (const student of students) {
-            if (student.classes.length > 0) {
-                throw new BadRequestException(`Student with ID ${student.id} is already assigned to another class`);
-            }
-        }
-
-
-        classEntity.user = [...classEntity.user, ...students.filter(student => !classEntity.user.includes(student))];
-
-        await this.classRepository.save(classEntity);
-        return {
-            statusCode: 200,
-            message: 'Thêm học sinh vào lớp học thành công',
-            data: null,
-            totalCount: null,
-        };
-    }
 
 
 }

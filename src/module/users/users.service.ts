@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Like, Repository } from "typeorm";
+import { IsNull, Like, Not, Repository } from 'typeorm';
 import { User } from "./entity/user.entity";
 import { CreateUserDto } from './dto/createUser.dto';
 import { FilterUserDto } from "./dto/filterUser.dto";
@@ -55,27 +55,53 @@ class UsersService {
   }
 
 
-  async list(req: FilterUserDto){
-     let filter = await updateFilterPagination(req)
-    const whereCondition =req.keyword
+  async list(req: FilterUserDto) {
+    let filter = await updateFilterPagination(req);
+
+    let whereCondition: any[] = req.keyword
       ? [
         { phone: Like(`%${req.keyword}%`), role: req.role },
-        { username: Like(`%${req.keyword}%`),role: req.role },
+        { username: Like(`%${req.keyword}%`), role: req.role },
       ]
       : [{ role: req.role }];
-      const skip = filter.startIndex
+
+    if (req.isAddClass !== undefined) {
+      if (req.isAddClass === false) {
+
+        whereCondition.push({ classes: IsNull() });
+      } else {
+
+        whereCondition.push({ classes: Not(IsNull()) });
+      }
+    }
+
+    if (req.subjectId !== undefined) {
+      whereCondition.push({
+        subject: { id: req.subjectId },
+      });
+    }
+    if (req.classId !== undefined) {
+      whereCondition.push({
+        classes: { id: req.classId },
+      });
+    }
+
+    const skip = filter.startIndex;
 
     const [users, total] = await this.userRepository.findAndCount({
       where: whereCondition,
       skip,
-      take: req.pageSize // Number of records to fetch per page
+      take: req.pageSize,
+      // relations: ['subject', 'classes'], // Lấy mối quan hệ subject và classes
     });
-     const usersWithoutPassword  = users.map(user => classToPlain(user))
+
+    const usersWithoutPassword = users.map(user => classToPlain(user));
     return {
       data: usersWithoutPassword,
       totalCount: total,
     };
   }
+
 
 
 
