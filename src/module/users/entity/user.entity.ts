@@ -29,4 +29,6 @@ export class User extends BaseEntity {
   grades: Grade[];
   @Column({nullable: true})
   birthDate: Date;
+  @OneToOne(() => Class, (classEntity) => classEntity.homeroomTeacher)
+  homeroomClass: Class;
 }

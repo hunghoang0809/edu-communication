@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsEnum } from 'class-validator';
+import { IsString, IsNotEmpty, IsEnum, IsArray, ArrayNotEmpty } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { GradeLevel } from '../grade.enum';
 
@@ -16,4 +16,12 @@ export class CreateClassDto {
   @ApiProperty()
   @IsEnum(GradeLevel)
   gradeLevel: GradeLevel;
+
+  @ApiProperty()
+  studentIds: number[];
+
+  @ApiProperty()
+  @IsNotEmpty()
+  teacherId: number;
+
 }

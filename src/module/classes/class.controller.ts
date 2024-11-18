@@ -55,23 +55,5 @@ export class ClassController {
     return this.classesService.remove(id);
   }
 
-  @Post('add-students')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
-  @ApiBearerAuth()
-  async addStudentToClass(
-    @Body() addStudentsToClassDto: AddStudentsToClassDto,
-  ) {
-    return await this.classesService.addStudentsToClass(addStudentsToClassDto);
-  }
 
-  @Post('add-teachers')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
-  @ApiBearerAuth()
-  async addTeacherToClass(
-    @Body() req: AddTeachersDto,
-  ) {
-    return await this.classesService.addTeachersToClass(req);
-  }
 }

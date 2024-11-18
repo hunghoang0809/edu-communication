@@ -1,11 +1,12 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Subject } from './entity/subject.entity';
 import { CreateSubjectDto } from './dto/createSubject.dto';
 import { UpdateSubjectDto } from './dto/updateSubject.dto';
 import { User } from '../users/entity/user.entity';
 import { AddSubjectToTeacherDto } from './dto/addSubjectToTeacher.dto';
+import { Role } from '../users/enum/role.enum';
 
 
 @Injectable()
@@ -25,72 +26,146 @@ export class SubjectService {
   }
 
 
-  async create(createSubjectDto: CreateSubjectDto): Promise<Subject> {
-    const subjectExists = await this.checkIfSubjectExists(createSubjectDto.name);
+  async create(createSubjectDto: CreateSubjectDto): Promise<any> {
+    const { name, teacherIds } = createSubjectDto;
+
+
+    const subjectExists = await this.checkIfSubjectExists(name);
     if (subjectExists) {
-      throw new ConflictException('Subject with this name already exists.');
+      throw new ConflictException('Môn học với tên này đã tồn tại.');
     }
-    const newSubject = this.subjectRepository.create(createSubjectDto);
-    return await this.subjectRepository.save(newSubject);
+
+
+    const newSubject = this.subjectRepository.create({ name });
+
+    if (teacherIds && teacherIds.length > 0) {
+      const teachers = await this.userRepository.find({
+        where: { id: In(teacherIds), role: 'TEACHER' },
+        relations: ['subject'],
+      });
+
+
+      if (teachers.length !== teacherIds.length) {
+        throw new NotFoundException('Một số giáo viên không tồn tại.');
+      }
+
+
+      const teachersWithExistingSubjects = teachers.filter(teacher => teacher.subject);
+
+      if (teachersWithExistingSubjects.length > 0) {
+        const teacherIdsWithSubjects = teachersWithExistingSubjects.map(teacher => teacher.id).join(', ');
+        throw new ConflictException(`Giáo viên với ID ${teacherIdsWithSubjects} đã được gán dạy môn học khác.`);
+      }
+
+      for (const teacher of teachers) {
+        teacher.subject = newSubject;
+        await this.userRepository.save(teacher);
+      }
+    }
+
+    // Lưu môn học mới vào cơ sở dữ liệu
+    return {
+      statusCode: 200,
+      data: null,
+      message: "Thêm môn hoc thành công"
+    }
   }
 
-  async findAll(): Promise<Subject[]> {
-    return this.subjectRepository.find();
+
+
+  async findAll(){
+    return {
+      statusCode: 200,
+      data: await this.subjectRepository.find(),
+      message: "Lấy danh sách môn học thành công"
+    }
   }
 
-  async findOne(id: number): Promise<Subject> {
-    const subject = await this.subjectRepository.findOneById(id);
+  async findOne(id: number){
+    const subject = await this.subjectRepository.findOne({
+      where: { id },
+      relations: ['users'],
+    });
     if (!subject) {
       throw new Error('Không tìm thấy môn học');
     }
-    return subject;
-  }
-
-  async update(id: number, updateSubjectDto: UpdateSubjectDto): Promise<Subject> {
-    const subjectExists = await this.checkIfSubjectExists(updateSubjectDto.name);
-    if (subjectExists) {
-      throw new ConflictException('Môn học này đã tồn tại');
-    }
-
-    await this.subjectRepository.update(id, updateSubjectDto);
-    return this.findOne(id);
-  }
-
-  async remove(id: number): Promise<void> {
-    const subject = await this.findOne(id);
-    await this.subjectRepository.remove(subject);
-  }
-
-  async addSubjectToTeacher(
-    addSubjectToTeacherDto: AddSubjectToTeacherDto,
-  ) {
-    const teacher = await this.userRepository.findOne({
-      where: { id: addSubjectToTeacherDto.teacherId, role: 'TEACHER' },
-      relations: ['subject'],
-    });
-
-    if (!teacher) {
-      throw new NotFoundException('Không tìm thâý giáo viên');
-    }
-
-    if (teacher.subject) {
-      throw new ConflictException('Giáo viên giáo viên chỉ được đăng kí dạy 1 môn');
-    }
-
-    const subject = await this.subjectRepository.findOne({
-      where: { id: addSubjectToTeacherDto.subjectId },
-    });
-
-    if (!subject) {
-      throw new NotFoundException('Không tìm thấy môn học');
-    }
-
-    teacher.subject = subject;
-    await this.userRepository.save(teacher);
     return {
       statusCode: 200,
-      data: teacher,
-      message: "Thêm môn học cho giáo viên thành công"
+      data: subject,
+      message: "Tìm kiếm môn học thành công"
     };
   }
+
+  async update(id: number, updateSubjectDto: UpdateSubjectDto) {
+    const { name, teacherIds } = updateSubjectDto;
+
+    const existingSubject = await this.subjectRepository.findOne({
+      where: { id },
+      relations: ['teachers'], // Giả sử quan hệ là 'teachers'
+    });
+
+    if (!existingSubject) {
+      throw new NotFoundException('Môn học không tồn tại');
+    }
+
+    if (name && name !== existingSubject.name) {
+      const subjectExists = await this.checkIfSubjectExists(name);
+      if (subjectExists) {
+        throw new ConflictException('Môn học này đã tồn tại');
+      }
+      existingSubject.name = name;
+    }
+
+    if (teacherIds && teacherIds.length > 0) {
+      // Lấy danh sách giáo viên từ mảng teacherIds
+      const teachers = await this.userRepository.find({
+        where: {
+          id: In(teacherIds),
+          role: Role.TEACHER,
+        },
+      });
+
+      if (teachers.length !== teacherIds.length) {
+        throw new BadRequestException('Một số giáo viên không tồn tại');
+      }
+
+      // Kiểm tra nếu giáo viên đã được thêm vào môn học khác
+      const teachersInOtherSubjects = teachers.filter(
+        (teacher) => teacher.subject && teacher.subject.id !== id
+      );
+
+      if (teachersInOtherSubjects.length > 0) {
+        const teacherIdsInOtherSubjects = teachersInOtherSubjects.map((teacher) => teacher.id).join(', ');
+        throw new BadRequestException(`Giáo viên này đã dạy môn học khác`);
+      }
+
+
+      existingSubject.users = teachers;
+    } else {
+
+      existingSubject.users = [];
+    }
+
+    await this.subjectRepository.save(existingSubject);
+
+    return {
+      statusCode: 200,
+      message: 'Cập nhật môn học thành công',
+      data: existingSubject,
+    };
+  }
+
+
+  async remove(id: number) {
+    const subject = await this.subjectRepository.findOne({where: {id}});
+    if(!subject){
+      throw new BadRequestException("Không tìm thấy môn học")
+    }
+    await this.subjectRepository.remove(subject);
+    return {
+      statusCode: 200,
+      message: "Xóa môn học thành công"
+    }
+  }
+
 }

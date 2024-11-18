@@ -14,5 +14,12 @@ export class FilterUserDto {
  @ApiPropertyOptional()
  @IsOptional()
   role: string;
+  @ApiPropertyOptional()
+  @IsOptional()
+ isAddClass: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+ subjectId: number;
 }
 

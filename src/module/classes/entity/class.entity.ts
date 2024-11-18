@@ -1,4 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, ManyToMany, JoinTable } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  ManyToMany,
+  JoinTable,
+  OneToOne,
+  JoinColumn,
+} from 'typeorm';
 
 import { BaseEntity } from "../../../base.entity";
 import { Subject } from "../../subjects/entity/subject.entity";
@@ -25,7 +34,8 @@ export class Class extends BaseEntity {
   @JoinTable()
   user: User[];
 
-  @ManyToMany(() => Subject, (subject) => subject.classes)
-  @JoinTable()
-  subjects: Subject[];
+  @OneToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'homeroom_teacher_id' })
+  homeroomTeacher: User| null;
+
 }

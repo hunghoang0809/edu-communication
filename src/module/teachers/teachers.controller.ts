@@ -43,12 +43,6 @@ export class TeachersController {
     return this.teachersService.updateProfile(userId, req);
   }
 
-  @Post('add-subject')
-  async addSubjectToTeacher(
-    @Body() addSubjectToTeacherDto: AddSubjectToTeacherDto,
-  ) {
-    return this.subjectService.addSubjectToTeacher(addSubjectToTeacherDto);
-  }
 
 
 }
