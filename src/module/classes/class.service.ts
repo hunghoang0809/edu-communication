@@ -43,6 +43,7 @@ export class ClassService {
             const queryBuilder = this.classRepository.createQueryBuilder('class')
               .leftJoinAndSelect('class.user', 'user')
               .where('user.id = :userId', { userId: filter.userId })
+              .andWhere('user.subjectId != :subjectId OR user.subjectId IS NULL', { subjectId: filter.subjectId })
               .skip(skip)
               .take(filter.pageSize);
             const classes = await queryBuilder.getMany();
