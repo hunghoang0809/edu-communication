@@ -7,6 +7,7 @@ import { UpdateSubjectDto } from './dto/updateSubject.dto';
 import { User } from '../users/entity/user.entity';
 import { AddSubjectToTeacherDto } from './dto/addSubjectToTeacher.dto';
 import { Role } from '../users/enum/role.enum';
+import { classToPlain } from 'class-transformer';
 
 
 @Injectable()
@@ -40,7 +41,7 @@ export class SubjectService {
 
     if (teacherIds && teacherIds.length > 0) {
       const teachers = await this.userRepository.find({
-        where: { id: In(teacherIds), role: 'TEACHER' },
+        where: { id: In(teacherIds), role: Role.TEACHER },
         relations: ['subject'],
       });
 
@@ -57,10 +58,14 @@ export class SubjectService {
         throw new ConflictException(`Giáo viên với ID ${teacherIdsWithSubjects} đã được gán dạy môn học khác.`);
       }
 
+
       for (const teacher of teachers) {
         teacher.subject = newSubject;
+
         await this.userRepository.save(teacher);
       }
+      newSubject.users = teachers;
+      await this.subjectRepository.save(newSubject);
     }
 
     // Lưu môn học mới vào cơ sở dữ liệu
@@ -74,9 +79,16 @@ export class SubjectService {
 
 
   async findAll(){
+
+    const subjects = await this.subjectRepository.find({relations: ['users']});
+    const result = subjects.map(subject => {
+      subject.users = subject.users.map(user => classToPlain(user) as User);
+      return subject;
+    });
+
     return {
       statusCode: 200,
-      data: await this.subjectRepository.find(),
+      data: result,
       message: "Lấy danh sách môn học thành công"
     }
   }
@@ -89,6 +101,7 @@ export class SubjectService {
     if (!subject) {
       throw new Error('Không tìm thấy môn học');
     }
+    subject.users = subject.users.map(user => classToPlain(user) as User);
     return {
       statusCode: 200,
       data: subject,

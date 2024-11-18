@@ -58,49 +58,63 @@ class UsersService {
   async list(req: FilterUserDto) {
     let filter = await updateFilterPagination(req);
 
-    let whereCondition: any[] = req.keyword
-      ? [
-        { phone: Like(`%${req.keyword}%`), role: req.role },
-        { username: Like(`%${req.keyword}%`), role: req.role },
-      ]
-      : [{ role: req.role }];
+    const queryBuilder = this.userRepository.createQueryBuilder('user')
+      .leftJoinAndSelect('user.subject', 'subject') // Join với bảng subject
+      .leftJoinAndSelect('user.classes', 'classes') // Join với bảng classes
+      .skip(filter.startIndex)
+      .take(req.pageSize);
 
-    if (req.isAddClass !== undefined) {
-      if (req.isAddClass === false) {
 
-        whereCondition.push({ classes: IsNull() });
-      } else {
+    if (req.keyword) {
+      queryBuilder.andWhere(
+        '(user.phone LIKE :keyword OR user.username LIKE :keyword)',
+        { keyword: `%${req.keyword}%` }
+      );
+    }
 
-        whereCondition.push({ classes: Not(IsNull()) });
-      }
+
+    if (req.role) {
+      queryBuilder.andWhere('user.role = :role', { role: req.role });
+    }
+
+    const isAddClassBoolean = filter.isAddClass === 'true';
+    console.log( isAddClassBoolean);
+    if (isAddClassBoolean===undefined) {
+    } else if (!isAddClassBoolean) {
+      console.log('vao day');
+      queryBuilder.andWhere(
+        'NOT EXISTS (SELECT 1 FROM class_user_users c WHERE c.usersId = user.id)'
+      );
+    } else if (isAddClassBoolean) {
+      console.log('vao day 2');
+      queryBuilder.andWhere(
+        'EXISTS (SELECT 1 FROM class_user_users c WHERE c.usersId = user.id)'
+      );
     }
 
     if (req.subjectId !== undefined) {
-      whereCondition.push({
-        subject: { id: req.subjectId },
-      });
+      queryBuilder.andWhere('subject.id = :subjectId', { subjectId: req.subjectId });
     }
+
     if (req.classId !== undefined) {
-      whereCondition.push({
-        classes: { id: req.classId },
-      });
+      queryBuilder.andWhere('classes.id = :classId', { classId: req.classId });
     }
 
-    const skip = filter.startIndex;
 
-    const [users, total] = await this.userRepository.findAndCount({
-      where: whereCondition,
-      skip,
-      take: req.pageSize,
-      // relations: ['subject', 'classes'], // Lấy mối quan hệ subject và classes
-    });
+    const [users, total] = await queryBuilder.getManyAndCount();
+
 
     const usersWithoutPassword = users.map(user => classToPlain(user));
+
     return {
       data: usersWithoutPassword,
       totalCount: total,
     };
   }
+
+
+
+
 
 
 

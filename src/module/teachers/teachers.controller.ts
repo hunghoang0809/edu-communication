@@ -20,10 +20,10 @@ export class TeachersController {
   { }
 
 
-  @Get("profile")
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.TEACHER)
+  @Get("profile")
   @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   public async getProfile(
     @User('id') userId: number
   ) {
@@ -33,9 +33,10 @@ export class TeachersController {
 
 
   @Patch("update-profile")
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.TEACHER)
-  @ApiBearerAuth()
+
   public async updateProfile(
     @User('id') userId: number,
     @Body() req: CreateTeacherDto

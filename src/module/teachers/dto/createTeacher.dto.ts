@@ -3,7 +3,6 @@ import { IsNotEmpty, IsOptional } from "class-validator";
 
 export class CreateTeacherDto {
   @ApiProperty()
-  @IsNotEmpty({message: "Họ và tên không được để trống"})
   name: string;
   @ApiPropertyOptional()
   @IsOptional()
