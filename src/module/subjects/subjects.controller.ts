@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards } from '@nestjs/common';
 
 
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CreateSubjectDto } from './dto/createSubject.dto';
 import { UpdateSubjectDto } from './dto/updateSubject.dto';
 import { SubjectService } from './subjects.service';
@@ -20,6 +20,7 @@ export class SubjectController {
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
+  @ApiBearerAuth()
   async create(@Body() createSubjectDto: CreateSubjectDto) {
     return this.subjectService.create(createSubjectDto);
   }
@@ -28,6 +29,7 @@ export class SubjectController {
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
+  @ApiBearerAuth()
   async findAll() {
     return this.subjectService.findAll();
   }
@@ -36,6 +38,7 @@ export class SubjectController {
   @Get(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
+  @ApiBearerAuth()
   async findOne(@Param('id') id: number) {
     return this.subjectService.findOne(id);
   }
@@ -44,6 +47,7 @@ export class SubjectController {
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
+  @ApiBearerAuth()
   async update(
     @Param('id') id: number,
     @Body() updateSubjectDto: UpdateSubjectDto,
@@ -55,6 +59,7 @@ export class SubjectController {
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
+  @ApiBearerAuth()
   async remove(@Param('id') id: number) {
     return this.subjectService.remove(id);
   }

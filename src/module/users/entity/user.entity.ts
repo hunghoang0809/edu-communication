@@ -16,7 +16,7 @@ export class User extends BaseEntity {
   @Exclude()
   password: string;
   @Column({default: Role.ADMIN})
-  role: string;
+  role: Role;
   @Column({nullable: true})
   fullName: string;
   @Column({nullable: true})

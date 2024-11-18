@@ -9,14 +9,15 @@ import { FilterUserDto } from "../users/dto/filterUser.dto";
 import { updateFilterPagination } from "../../query";
 import { classToPlain, plainToClass } from 'class-transformer';
 import { Class } from '../classes/entity/class.entity';
+import { Subject } from '../subjects/entity/subject.entity';
 
 @Injectable()
 class TeachersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    @InjectRepository(Class)
-    private readonly classRepository: Repository<Class>,
+    @InjectRepository(Subject)
+    private readonly subjectRepository: Repository<Subject>,
   ) {
   }
 
@@ -35,7 +36,15 @@ class TeachersService {
     if (!teacher) {
       throw new NotFoundException("Giáo viên không tồn tại");
     }
-    await this.userRepository.update(id, req);
+    const subject = await this.subjectRepository.findOneById(req.subjectId);
+    if (!subject) {
+      throw new BadRequestException("Môn học không tồn tại");
+    }
+    teacher.subject = subject;
+    teacher.fullName = req.name;
+    teacher.email = req.email;
+    teacher.phone = req.phone;
+    await this.userRepository.save(teacher);
     return {
       statusCode: 200,
       message: "Cập nhật thông tin giáo viên thành công",

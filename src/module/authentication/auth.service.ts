@@ -13,6 +13,7 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as process from 'node:process';
+import { Role } from '../users/enum/role.enum';
 
 
 @Injectable()
@@ -23,7 +24,7 @@ export class AuthService {
     private readonly userRepository: Repository<User>
   ) {}
 
-  async generateToken(id: number, phone: string, role: string, username: string){
+  async generateToken(id: number, phone: string, role: Role, username: string){
     const payload = {id: id,  phone: phone, role: role, username: username}
     return this.jwtService.sign(payload)
   }
