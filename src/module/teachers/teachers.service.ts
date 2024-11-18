@@ -44,20 +44,6 @@ class TeachersService {
     }
   }
 
-  async getTeacherClasses(teacherId: number): Promise<any> {
-    const teacher = await this.userRepository.findOne({
-      where: { id: teacherId },
-      relations: ['classes'],  // Liên kết với các lớp học của giáo viên
-    });
-
-    if (!teacher) {
-      return {
-        data: null
-      };
-    }
-
-    return {data: teacher.classes};  // Trả về danh sách lớp học mà giáo viên dạy
-  }
 
 
 }

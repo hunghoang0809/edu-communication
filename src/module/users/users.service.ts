@@ -80,6 +80,11 @@ class UsersService {
         subject: { id: req.subjectId },
       });
     }
+    if (req.classId !== undefined) {
+      whereCondition.push({
+        classes: { id: req.classId },
+      });
+    }
 
     const skip = filter.startIndex;
 
