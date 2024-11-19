@@ -114,7 +114,7 @@ export class SubjectService {
 
     const existingSubject = await this.subjectRepository.findOne({
       where: { id },
-      relations: ['teachers'], // Giả sử quan hệ là 'teachers'
+      relations: ['users'],
     });
 
     if (!existingSubject) {
