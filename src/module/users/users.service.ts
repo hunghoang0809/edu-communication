@@ -78,18 +78,17 @@ class UsersService {
     }
 
     const isAddClassBoolean = filter.isAddClass === 'true';
-    console.log( isAddClassBoolean);
-    if (isAddClassBoolean===undefined) {
-    } else if (!isAddClassBoolean) {
-      console.log('vao day');
-      queryBuilder.andWhere(
-        'NOT EXISTS (SELECT 1 FROM class_user_users c WHERE c.usersId = user.id)'
-      );
-    } else if (isAddClassBoolean) {
-      console.log('vao day 2');
-      queryBuilder.andWhere(
-        'EXISTS (SELECT 1 FROM class_user_users c WHERE c.usersId = user.id)'
-      );
+
+    if(req.isAddClass != undefined) {
+      if (!isAddClassBoolean) {
+        queryBuilder.andWhere(
+          'NOT EXISTS (SELECT 1 FROM class_user_users c WHERE c.usersId = user.id)'
+        );
+      } else if (isAddClassBoolean) {
+        queryBuilder.andWhere(
+          'EXISTS (SELECT 1 FROM class_user_users c WHERE c.usersId = user.id)'
+        );
+      }
     }
 
     if (req.subjectId !== undefined) {
