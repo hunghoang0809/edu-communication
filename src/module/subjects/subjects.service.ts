@@ -37,7 +37,7 @@ export class SubjectService {
     }
 
 
-    const newSubject = this.subjectRepository.create({ name });
+    const newSubject = this.subjectRepository.create({name: name });
 
     if (teacherIds && teacherIds.length > 0) {
       const teachers = await this.userRepository.find({
@@ -65,9 +65,9 @@ export class SubjectService {
         await this.userRepository.save(teacher);
       }
       newSubject.users = teachers;
-      await this.subjectRepository.save(newSubject);
     }
 
+    await this.subjectRepository.save(newSubject);
     // Lưu môn học mới vào cơ sở dữ liệu
     return {
       statusCode: 200,
