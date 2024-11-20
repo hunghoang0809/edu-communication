@@ -1,6 +1,8 @@
 import { Controller, Get } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import StudentsService from './students.service';
+import { User } from "../../utils/decorator/user.decorator";
+
 
 @Controller('students')
 @ApiTags('Students')
@@ -9,9 +11,12 @@ constructor(
  private readonly studentsService: StudentsService,
 ) {
 }
-// @Get("profile")
-//   async getProfile() {
-//     return await this.studentsService.profile();
-//   }
+@Get("profile")
+@ApiBearerAuth()
+  async getProfile(
+  @User('id') userId: number
+) {
+    return await this.studentsService.profile(userId);
+  }
 
 }
