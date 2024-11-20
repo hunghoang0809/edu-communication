@@ -119,7 +119,7 @@ class UsersService {
 
 
   async getById(id: number){
-    const user = await this.userRepository.findOne({where:{id}})
+    const user = await this.userRepository.findOne({where:{id}, relations:['subject', 'classes','grades']});
 
     return {
       data: classToPlain(user)
