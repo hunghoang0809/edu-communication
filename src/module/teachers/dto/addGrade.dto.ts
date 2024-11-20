@@ -1,8 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { IsNotEmpty, IsOptional } from "class-validator";
-import { Column } from "typeorm";
+
 
 class GradeDto{
+
+  @ApiProperty()
+  userId: number;
 
   @ApiProperty()
   scoreFactor1: number;
@@ -17,20 +19,13 @@ class GradeDto{
   classId: number;
 }
 
- class AddGradeToUserDto {
-
-  @ApiProperty()
-  userId: number;
+export class AddGradeDto {
 
   @ApiProperty({ type: [GradeDto] })
   addGrade: GradeDto[];
 
 }
 
-export class AddGradeDto{
-  @ApiProperty({ type: [AddGradeToUserDto] })
-  addToUserDto: AddGradeToUserDto[];
-}
 
 
 export default AddGradeDto;
