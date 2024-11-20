@@ -15,6 +15,9 @@ export class Grade extends BaseEntity {
   @Column('decimal', { precision: 5, scale: 2, nullable: true })
   scoreFactor3: number;
 
+  @Column('decimal', { precision: 5, scale: 2, nullable: true })
+  averageScore: number |null;
+
   @ManyToOne(() => User, (student) => student.grades)
   user: User;
 
@@ -23,4 +26,7 @@ export class Grade extends BaseEntity {
 
   @Column()
   class: string
+
+  @Column()
+  schoolYear: string
 }

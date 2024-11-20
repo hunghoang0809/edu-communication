@@ -12,6 +12,7 @@ import { User } from '../../utils/decorator/user.decorator';
 import { AddSubjectToTeacherDto } from '../subjects/dto/addSubjectToTeacher.dto';
 import { SubjectService } from '../subjects/subjects.service';
 import AddTeacherClassDto from './dto/addTeacherClass.dto';
+import AddGradeDto from "./dto/addGrade.dto";
 
 @ApiTags("Teachers")
 @Controller('teacher')
@@ -53,6 +54,14 @@ export class TeachersController {
     @Body() req: AddTeacherClassDto
   ) {
     return this.teachersService.addTeacherToClass(userId, req);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.TEACHER)
+  @Post('add-grade')
+  async addGrades(@Body() gradeDtos: AddGradeDto, @User('id') userId: number,) {
+    return await this.teachersService.upsertGrades(userId, gradeDtos);
   }
 
 }

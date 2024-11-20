@@ -8,6 +8,8 @@ import { classToPlain } from 'class-transformer';
 import { Class } from '../classes/entity/class.entity';
 import { Subject } from '../subjects/entity/subject.entity';
 import AddTeacherClassDto from './dto/addTeacherClass.dto';
+import AddGradeDto from "./dto/addGrade.dto";
+import { Grade } from "../students/entity/grade.entity";
 
 @Injectable()
 class TeachersService {
@@ -18,11 +20,16 @@ class TeachersService {
     private readonly subjectRepository: Repository<Subject>,
     @InjectRepository(Class)
     private readonly classRepository: Repository<Class>,
+    @InjectRepository(Grade)
+    private readonly gradeRepository: Repository<Grade>,
   ) {
   }
 
   async getProfile(id: number) {
-    const teacher = await this.userRepository.findOne({ where: { role: Role.TEACHER, id: id }, relations: ['subject', 'classes'] });
+    const teacher = await this.userRepository.findOne({
+      where: { role: Role.TEACHER, id: id },
+      relations: ['subject', 'classes']
+    });
     if (!teacher) {
       throw new NotFoundException("Giáo viên không tồn tại");
     }
@@ -41,7 +48,6 @@ class TeachersService {
       throw new BadRequestException("Môn học không tồn tại");
     }
     teacher.subject = subject;
-    teacher.fullName = req.name;
     teacher.email = req.email;
     teacher.phone = req.phone;
     await this.userRepository.save(teacher);
@@ -57,11 +63,14 @@ class TeachersService {
     // Fetch the teacher (single object)
     const teacher = await this.userRepository.findOne({
       where: { role: Role.TEACHER, id: id },
-      relations: ['classes','subject'],  // Include classes and their subjects
+      relations: ['classes', 'subject'],  // Include classes and their subjects
     });
 
     if (!teacher) {
       throw new NotFoundException("Giáo viên không tồn tại");
+    }
+    if (!teacher.subject) {
+      throw new BadRequestException("Cập nhập môn học cho giáo viên trước khi phân công lớp")
     }
 
     // Fetch the classes by IDs
@@ -109,8 +118,127 @@ class TeachersService {
   }
 
 
+  async upsertGrades(teacherId: number, addGradeDto: AddGradeDto) {
+    const { addGrade } = addGradeDto;
 
+    if (!addGrade || addGrade.length === 0) {
+      throw new BadRequestException('Danh sách điểm không được để trống');
+    }
+
+    const gradesToSave: Grade[] = [];
+
+    for (const gradeDto of addGrade) {
+      // Tìm học sinh
+      const student = await this.userRepository.findOne({
+        where: { id: gradeDto.userId, role: Role.STUDENT },
+      });
+
+      if (!student) {
+        throw new BadRequestException(`Học sinh ID ${gradeDto.userId} không tồn tại`);
+      }
+
+      // Kiểm tra lớp học
+      const classExists = await this.classRepository.findOne({
+        where: { id: gradeDto.classId },
+        relations: ['user', 'user.subject'],
+      });
+
+      if (!classExists) {
+        throw new BadRequestException(`Lớp học ID ${gradeDto.classId} không tồn tại`);
+      }
+
+      // Kiểm tra quyền giáo viên
+      const teacherOfClass = classExists.user.find(
+        (user) => user.id === teacherId && user.role === Role.TEACHER,
+      );
+
+      if (!teacherOfClass) {
+        throw new BadRequestException(`Bạn không có quyền nhập điểm cho lớp ID ${gradeDto.classId}`);
+      }
+
+      if (!teacherOfClass.subject || !teacherOfClass.subject.name) {
+        throw new BadRequestException('Giáo viên chưa có môn học, không thể nhập điểm');
+      }
+
+
+      const existingGrade = await this.gradeRepository.findOne({
+        where: {
+          user: { id: student.id },
+          class: String(classExists.name), // Ép kiểu thành chuỗi
+          subject: String(teacherOfClass.subject.name),
+        },
+      });
+
+      if (existingGrade) {
+        // Nếu đã có điểm thì cập nhật
+        existingGrade.scoreFactor1 = gradeDto.scoreFactor1;
+        existingGrade.scoreFactor2 = gradeDto.scoreFactor2;
+        existingGrade.scoreFactor3 = gradeDto.scoreFactor3;
+
+        // Tính điểm trung bình nếu đủ 3 đầu điểm
+        if (
+          existingGrade.scoreFactor1 !== null &&
+          existingGrade.scoreFactor2 !== null &&
+          existingGrade.scoreFactor3 !== null
+        ) {
+          existingGrade.averageScore =
+            (existingGrade.scoreFactor1 +
+              existingGrade.scoreFactor2 * 2 +
+              existingGrade.scoreFactor3 * 3) /
+            6;
+        } else {
+          existingGrade.averageScore = null;
+        }
+
+        // Lưu bản ghi đã cập nhật
+        await this.gradeRepository.save(existingGrade);
+      } else if (
+        gradeDto.scoreFactor1 !== undefined ||
+        gradeDto.scoreFactor2 !== undefined ||
+        gradeDto.scoreFactor3 !== undefined
+      ) {
+        // Chỉ tạo mới nếu không có bản ghi nào tồn tại
+        const grade = new Grade();
+        grade.user = student;
+        grade.scoreFactor1 = gradeDto.scoreFactor1;
+        grade.scoreFactor2 = gradeDto.scoreFactor2;
+        grade.scoreFactor3 = gradeDto.scoreFactor3;
+        grade.subject = teacherOfClass.subject.name;
+        grade.class = classExists.name;
+        grade.schoolYear = classExists.schoolYear;
+
+        // Tính điểm trung bình nếu đủ 3 đầu điểm
+        if (
+          gradeDto.scoreFactor1 !== null &&
+          gradeDto.scoreFactor2 !== null &&
+          gradeDto.scoreFactor3 !== null
+        ) {
+          grade.averageScore =
+            (gradeDto.scoreFactor1 +
+              gradeDto.scoreFactor2 * 2 +
+              gradeDto.scoreFactor3 * 3) /
+            6;
+        } else {
+          grade.averageScore = null; // Không đủ điểm, trung bình là null
+        }
+
+        gradesToSave.push(grade); // Thêm vào danh sách lưu
+      }
+    }
+
+    if (gradesToSave.length > 0) {
+      await this.gradeRepository.save(gradesToSave);
+    }
+
+    return {
+      statusCode: 200,
+      message: 'Nhập điểm thành công',
+      total: gradesToSave.length,
+    };
+  }
 
 }
 
-export default TeachersService;
+
+
+  export default TeachersService;
