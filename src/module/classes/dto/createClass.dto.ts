@@ -14,10 +14,6 @@ export class CreateClassDto {
   schoolYear: string;
 
   @ApiProperty()
-  @IsEnum(GradeLevel)
-  gradeLevel: GradeLevel;
-
-  @ApiProperty()
   studentIds: number[];
 
   @ApiProperty()

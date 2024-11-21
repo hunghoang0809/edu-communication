@@ -23,13 +23,6 @@ export class Class extends BaseEntity {
   @Column()
   schoolYear: string;
 
-  @Column({
-    type: 'enum',
-    enum: GradeLevel,
-    nullable: false,
-  })
-  gradeLevel: GradeLevel;
-
   @ManyToMany(() => User, (user) => user.classes)
   @JoinTable()
   user: User[];
