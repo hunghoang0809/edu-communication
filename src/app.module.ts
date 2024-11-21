@@ -11,11 +11,12 @@ import { TeachersModule } from "./module/teachers/teachers.module";
 import { SubjectsModule } from "./module/subjects/subjects.module";
 import { StudentsModule } from "./module/students/students.module";
 import { ClassModule } from "./module/classes/class.module";
+import { NotificationModule } from './module/notifications/notification.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
     isGlobal: true,
-  }), DatabaseModule, AuthModule, UsersModule, SeederModule, TeachersModule, SubjectsModule, StudentsModule, ClassModule],
+  }), DatabaseModule, AuthModule, UsersModule, SeederModule, TeachersModule, SubjectsModule, StudentsModule, ClassModule, NotificationModule],
   controllers: [],
   providers: [{provide: APP_INTERCEPTOR, useClass: ResponseInterceptor}],
 })

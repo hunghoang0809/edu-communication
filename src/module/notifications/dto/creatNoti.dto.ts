@@ -1,8 +1,8 @@
 import { ApiProperty } from "@nestjs/swagger";
 
 export class SendNotificationDto {
-  @ApiProperty()
-  recipientId: number;
+  @ApiProperty({ type: [Number] })
+  recipientIds: number[];
 
   @ApiProperty()
   title: string;
