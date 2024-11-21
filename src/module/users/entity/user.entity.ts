@@ -5,6 +5,7 @@ import { Role } from "../enum/role.enum";
 import { Class } from "../../classes/entity/class.entity";
 import { Subject } from "../../subjects/entity/subject.entity";
 import { Grade } from "../../students/entity/grade.entity";
+import { Notification } from "../../notifications/entity/notification.entity";
 
 @Entity('users')
 export class User extends BaseEntity {
@@ -31,4 +32,9 @@ export class User extends BaseEntity {
   birthDate: Date;
   @OneToOne(() => Class, (classEntity) => classEntity.homeroomTeacher)
   homeroomClass: Class;
+  @OneToMany(() => Notification, (notification) => notification.sender)
+  notificationsSent: Notification[];
+
+  @OneToMany(() => Notification, (notification) => notification.recipient)
+  notificationsReceived: Notification[];
 }

@@ -60,8 +60,9 @@ export class ClassService {
     async findOne(id: number) {
         const classEntity = await this.classRepository.findOne({
             where: { id },
-            relations: ['user','subjects'],
+            relations: ['user','homeroomTeacher'],
         });
+
         if (!classEntity) {
             throw new NotFoundException(`Class with ID ${id} not found`);
         }
@@ -76,44 +77,51 @@ export class ClassService {
     }
 
     async create(req: CreateClassDto): Promise<any> {
-        const { name, schoolYear, studentIds, gradeLevel, teacherId } = req;
+        const { name, schoolYear, studentIds, teacherId } = req;
 
         // Kiểm tra lớp học đã tồn tại
         const existingClass = await this.classRepository.findOne({
-            where: {
-                name,
-                schoolYear,
-                gradeLevel,
-            },
+            where: { name, schoolYear },
             relations: ['user'],
         });
 
         if (existingClass) {
-            throw new BadRequestException('Lớp học này đã tồn tại trong khối học và năm học này.');
+            throw new BadRequestException(
+              'Lớp học này đã tồn tại trong khối học và năm học này.',
+            );
         }
 
-        // Lấy danh sách học sinh từ studentIds
-        const students = await this.userRepository.find({
-            where: { id: In(studentIds), role: Role.STUDENT },
-            relations: ['classes'],
-        });
+        // Kiểm tra danh sách học sinh (nếu có)
+        let students: User[] = [];
+        if (studentIds && studentIds.length > 0) {
+            students = await this.userRepository.find({
+                where: { id: In(studentIds), role: Role.STUDENT },
+                relations: ['classes'],
+            });
 
-        if (students.length !== studentIds.length) {
-            throw new NotFoundException('Một số học sinh không tồn tại');
+            if (students.length !== studentIds.length) {
+                const missingIds = studentIds.filter(
+                  (id) => !students.some((student) => student.id === id),
+                );
+                throw new NotFoundException(
+                  `Không tìm thấy học sinh với ID: ${missingIds.join(', ')}`,
+                );
+            }
+
+            // Kiểm tra học sinh đã thuộc lớp trong cùng năm học
+            const studentsInOtherClasses = students.filter((student) =>
+              student.classes.some((existingClass) => existingClass.schoolYear === schoolYear),
+            );
+
+            if (studentsInOtherClasses.length > 0) {
+                const conflictIds = studentsInOtherClasses.map((student) => student.id);
+                throw new BadRequestException(
+                  `Học sinh với ID ${conflictIds.join(', ')} đã được thêm vào lớp khác.`,
+                );
+            }
         }
 
-        // Kiểm tra nếu học sinh đã được thêm vào lớp khác trong cùng năm học
-        const studentsInOtherClasses = students.filter(
-          (student) =>
-            student.classes.some((existingClass) => existingClass.schoolYear === schoolYear)
-        );
-
-        if (studentsInOtherClasses.length > 0) {
-            const studentIds = studentsInOtherClasses.map((student) => student.id).join(', ');
-            throw new BadRequestException(`Học sinh với ID ${studentIds} đã được thêm vào lớp khác`);
-        }
-
-        // Kiểm tra giáo viên chủ nhiệm
+        // Kiểm tra giáo viên chủ nhiệm (nếu có)
         let homeroomTeacher: User | null = null;
         if (teacherId) {
             homeroomTeacher = await this.userRepository.findOne({
@@ -122,28 +130,34 @@ export class ClassService {
             });
 
             if (!homeroomTeacher) {
-                throw new NotFoundException(`Giáo viên chủ nhiệm với ID ${teacherId} không tồn tại`);
+                throw new NotFoundException(`Giáo viên với ID ${teacherId} không tồn tại.`);
             }
 
             if (homeroomTeacher.homeroomClass) {
-                throw new BadRequestException(`Giáo viên với ID ${teacherId} đã là chủ nhiệm lớp khác`);
+                throw new BadRequestException(
+                  `Giáo viên với ID ${teacherId} đã là chủ nhiệm lớp khác.`,
+                );
             }
         }
 
-        // Tạo lớp học mới và thêm danh sách học sinh
-        const newClass = this.classRepository.create({ name, schoolYear, gradeLevel });
-        newClass.user = students; // Thêm học sinh vào lớp học
-        newClass.homeroomTeacher = homeroomTeacher; // Thêm giáo viên chủ nhiệm nếu có
+        // Tạo lớp học mới
+        const newClass = this.classRepository.create({
+            name,
+            schoolYear,
+            homeroomTeacher,
+            user: students, // Gắn danh sách học sinh vào lớp
+        });
 
-        // Lưu lớp học mới vào cơ sở dữ liệu
+        // Lưu lớp học vào cơ sở dữ liệu
         await this.classRepository.save(newClass);
 
         return {
             statusCode: 200,
             message: 'Tạo lớp học thành công',
-            data: newClass,
+            data: null,
         };
     }
+
 
 
 
