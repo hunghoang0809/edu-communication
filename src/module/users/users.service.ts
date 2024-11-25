@@ -59,8 +59,8 @@ class UsersService {
     let filter = await updateFilterPagination(req);
 
     const queryBuilder = this.userRepository.createQueryBuilder('user')
-      .leftJoinAndSelect('user.subject', 'subject') // Join với bảng subject
-      .leftJoinAndSelect('user.classes', 'classes') // Join với bảng classes
+      .leftJoinAndSelect('user.subject', 'subject')
+      .leftJoinAndSelect('user.classes', 'classes')
       .skip(filter.startIndex)
       .take(req.pageSize);
 
@@ -75,6 +75,9 @@ class UsersService {
 
     if (req.role) {
       queryBuilder.andWhere('user.role = :role', { role: req.role });
+    }
+    else {
+      queryBuilder.andWhere('user.role != :adminRole', { adminRole: 'admin' });
     }
 
     const isAddClassBoolean = filter.isAddClass === 'true';
@@ -110,11 +113,6 @@ class UsersService {
       totalCount: total,
     };
   }
-
-
-
-
-
 
 
 

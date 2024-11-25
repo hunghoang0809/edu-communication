@@ -64,4 +64,12 @@ export class TeachersController {
     return await this.teachersService.upsertGrades(userId, gradeDtos);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.TEACHER)
+  @Get('list-student')
+  async listStudent(@User('id') userId: number, @Query('classId') classId: number) {
+    return await this.teachersService.listStudentsInClass(userId, classId);
+  }
+
 }

@@ -25,7 +25,6 @@ export class UsersController {
 
   @Get("")
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
   @ApiBearerAuth()
   async findAll(@Query() req: FilterUserDto) {
     return this.usersService.list(req);
