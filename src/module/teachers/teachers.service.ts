@@ -124,7 +124,6 @@ class TeachersService {
       throw new BadRequestException('Giáo viên chưa được phân môn học');
     }
 
-    // Tìm lớp theo ID
     const classEntity = await this.classRepository.findOne({
       where: { id: classId },
       relations: ['user'],
@@ -152,7 +151,6 @@ class TeachersService {
       };
     }
 
-    // Lấy điểm của học sinh theo môn học của giáo viên
     const studentGrades = await Promise.all(
       students.map(async (student) => {
         const grade = await this.gradeRepository.findOne({
