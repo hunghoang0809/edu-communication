@@ -33,7 +33,7 @@ export class AuthService {
     const user = await this.userRepository.findOne({where: [
         { phone: req.phoneOrUsername },
         { username: req.phoneOrUsername },
-      ],});
+      ], relations: ['subject', 'classes']});
 
     if(!user){
       throw new NotFoundException("Người dùng chưa được cấp tài khoản")
