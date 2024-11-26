@@ -77,7 +77,7 @@ export class ClassService {
     }
 
     async create(req: CreateClassDto): Promise<any> {
-        const { name, schoolYear, studentIds, teacherId } = req;
+        const { name, schoolYear, studentIds, homeroomTeacher } = req;
 
         // Kiểm tra lớp học đã tồn tại
         const existingClass = await this.classRepository.findOne({
@@ -91,7 +91,7 @@ export class ClassService {
             );
         }
 
-        // Kiểm tra danh sách học sinh (nếu có)
+
         let students: User[] = [];
         if (studentIds && studentIds.length > 0) {
             students = await this.userRepository.find({
@@ -108,7 +108,7 @@ export class ClassService {
                 );
             }
 
-            // Kiểm tra học sinh đã thuộc lớp trong cùng năm học
+
             const studentsInOtherClasses = students.filter((student) =>
               student.classes.some((existingClass) => existingClass.schoolYear === schoolYear),
             );
@@ -121,21 +121,20 @@ export class ClassService {
             }
         }
 
-        // Kiểm tra giáo viên chủ nhiệm (nếu có)
-        let homeroomTeacher: User | null = null;
-        if (teacherId) {
-            homeroomTeacher = await this.userRepository.findOne({
-                where: { id: teacherId, role: Role.TEACHER },
+        let teacher: User | null = null;
+        if (homeroomTeacher) {
+            teacher = await this.userRepository.findOne({
+                where: { id: homeroomTeacher, role: Role.TEACHER },
                 relations: ['homeroomClass'],
             });
 
-            if (!homeroomTeacher) {
-                throw new NotFoundException(`Giáo viên với ID ${teacherId} không tồn tại.`);
+            if (!teacher) {
+                throw new NotFoundException(`Giáo viên với ID ${homeroomTeacher} không tồn tại.`);
             }
 
-            if (homeroomTeacher.homeroomClass) {
+            if (teacher.homeroomClass) {
                 throw new BadRequestException(
-                  `Giáo viên với ID ${teacherId} đã là chủ nhiệm lớp khác.`,
+                  `Giáo viên với ID ${homeroomTeacher} đã là chủ nhiệm lớp khác.`,
                 );
             }
         }
@@ -144,8 +143,8 @@ export class ClassService {
         const newClass = this.classRepository.create({
             name,
             schoolYear,
-            homeroomTeacher,
-            user: students, // Gắn danh sách học sinh vào lớp
+            homeroomTeacher: teacher,
+            user: students,
         });
 
         // Lưu lớp học vào cơ sở dữ liệu
@@ -163,7 +162,7 @@ export class ClassService {
 
 
     async update(id: number, updateClassDto: UpdateClassDto): Promise<any> {
-        const { name, schoolYear, studentIds, teacherId } = updateClassDto;
+        const { name, schoolYear, studentIds, homeroomTeacher } = updateClassDto;
 
         const classEntity = await this.classRepository.findOne({
             where: { id },
@@ -205,17 +204,17 @@ export class ClassService {
             classEntity.user = students;
         }
 
-        if (teacherId) {
+        if (homeroomTeacher) {
             const teacher = await this.userRepository.findOne({
                 where: {
-                    id: teacherId,
+                    id: homeroomTeacher,
                     role: Role.TEACHER,
                 },
                 relations: ['homeroomClass'],
             });
 
             if (!teacher) {
-                throw new NotFoundException(`Giáo viên với ID ${teacherId} không tồn tại`);
+                throw new NotFoundException(`Giáo viên với ID ${homeroomTeacher} không tồn tại`);
             }
 
 
