@@ -18,6 +18,6 @@ export class CreateClassDto {
 
   @ApiProperty()
   @IsNotEmpty()
-  teacherId: number;
+  homeroomTeacher: number;
 
 }

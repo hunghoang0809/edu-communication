@@ -108,7 +108,7 @@ export class ClassService {
                 );
             }
 
-            // Kiểm tra học sinh đã thuộc lớp trong cùng năm học
+
             const studentsInOtherClasses = students.filter((student) =>
               student.classes.some((existingClass) => existingClass.schoolYear === schoolYear),
             );
@@ -121,7 +121,6 @@ export class ClassService {
             }
         }
 
-        // Kiểm tra giáo viên chủ nhiệm (nếu có)
         let homeroomTeacher: User | null = null;
         if (teacherId) {
             homeroomTeacher = await this.userRepository.findOne({

@@ -13,6 +13,6 @@ export class UpdateClassDto  {
   studentIds: number[];
 
   @ApiProperty()
-  teacherId: number;
+  homeroomTeacher: number;
 
 }
