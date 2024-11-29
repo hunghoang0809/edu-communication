@@ -8,7 +8,7 @@ export class Notification extends BaseEntity {
   @Column({ nullable: true })
   title: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'text', nullable: true })
   content: string;
 
   @ManyToOne(() => User, (user) => user.notificationsSent, { eager: true })

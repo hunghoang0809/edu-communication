@@ -142,6 +142,80 @@ class TeachersService {
 
 
 
+  async listStudentsInClass(teacherId: number, classId: number) {
+    const teacher = await this.userRepository.findOne({
+      where: { id: teacherId, role: Role.TEACHER },
+      relations: ['subject'],
+    });
+    if (!teacher) {
+      throw new NotFoundException('Giáo viên không tồn tại');
+    }
+
+    if (!teacher.subject) {
+      throw new BadRequestException('Giáo viên chưa được phân môn học');
+    }
+
+    const classEntity = await this.classRepository.findOne({
+      where: { id: classId },
+      relations: ['user'],
+    });
+    if (!classEntity) {
+      throw new NotFoundException('Lớp học không tồn tại');
+    }
+
+    const teacherOfClass = classEntity.user.find(
+      (user) => user.id === teacherId && user.role === Role.TEACHER
+    );
+
+    if (!teacherOfClass) {
+      throw new BadRequestException('Giáo viên không được phân công cho lớp này');
+    }
+
+    const students = classEntity.user.filter((user) => user.role === Role.STUDENT);
+
+    if (students.length === 0) {
+      return {
+        statusCode: 200,
+        message: 'Không có học sinh nào trong lớp này',
+        data: [],
+        totalCount: 0,
+      };
+    }
+
+    const studentGrades = await Promise.all(
+      students.map(async (student) => {
+        const grade = await this.gradeRepository.findOne({
+          where: {
+            user: { id: student.id },
+            class: classEntity.name,
+            subject: teacher.subject.name,
+          },
+        });
+
+        return {
+          studentId: student.id,
+          name: student.fullName,
+          grade: grade
+            ? {
+              scoreFactor1: grade.scoreFactor1,
+              scoreFactor2: grade.scoreFactor2,
+              scoreFactor3: grade.scoreFactor3,
+              averageScore: grade.averageScore,
+            }
+            : null,
+        };
+      })
+    );
+
+    return {
+      statusCode: 200,
+      message: 'Danh sách học sinh và điểm theo môn học',
+      data: studentGrades,
+      totalCount: studentGrades.length,
+    };
+  }
+
+
   async upsertGrades(teacherId: number, addGradeDto: AddGradeDto) {
     const { addGrade } = addGradeDto;
 
