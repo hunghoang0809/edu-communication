@@ -80,7 +80,7 @@ export class ClassService {
                 ...classEntity,
                user: classToPlain(students),
                 quantity: quantity,
-                homeroomTeacher: classEntity.homeroomTeacher ? classEntity.homeroomTeacher : null,
+                homeroomTeacher: classEntity.homeroomTeacher ? classToPlain(classEntity.homeroomTeacher) : null,
             }
         };
     }
