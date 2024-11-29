@@ -12,6 +12,7 @@ class StudentsService {
 
   async profile(id :number){
     const student = await this.userRepository.findOne({where:{id:id}, relations:['grades','classes'] });
+
     return {
       data: student,
     };

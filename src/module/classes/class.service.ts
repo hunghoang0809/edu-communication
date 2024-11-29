@@ -29,11 +29,10 @@ export class ClassService {
         filter = await updateFilterPagination(filter)
         const skip = filter.startIndex
         if (userRole === 'admin') {
-            const classes = await this.classRepository.find({
-                skip,
-                take: filter.pageSize,
-                relations:['user']
-            });
+            const classes = await this.classRepository
+              .createQueryBuilder('class')
+              .leftJoinAndSelect('class.user', 'user', 'user.role = :role', { role: Role.STUDENT })
+              .getMany();
             const totalCount = await this.classRepository.count();
             const classesWithQuantity = classes.map(classEntity => ({
                 id: classEntity.id,
@@ -53,14 +52,10 @@ export class ClassService {
               .skip(skip)
               .take(filter.pageSize);
             const classes = await queryBuilder.getMany();
-            const classesWithQuantity = classes.map(classEntity => ({
-                ...classEntity,
-                quantity: classEntity.user.length, // Thêm trường quantity
-            }));
             const totalCount = await queryBuilder.getCount();
             return {
                 data: {
-                    classesWithQuantity,
+                    classes,
             },
                 totalCount: totalCount
             }
@@ -85,7 +80,7 @@ export class ClassService {
                 ...classEntity,
                user: classToPlain(students),
                 quantity: quantity,
-                homeroomTeacher: classEntity.homeroomTeacher ? classEntity.homeroomTeacher.id : null,
+                homeroomTeacher: classEntity.homeroomTeacher ? classEntity.homeroomTeacher : null,
             }
         };
     }
