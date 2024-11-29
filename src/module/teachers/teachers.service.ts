@@ -73,9 +73,9 @@ class TeachersService {
       throw new BadRequestException("Cập nhật môn học cho giáo viên trước khi phân công lớp");
     }
 
-    // Nếu mảng classIds rỗng, xóa toàn bộ các lớp mà giáo viên phụ trách
-    if (req.classIds.length === 0) {
-      teacher.classes = []; // Xóa hết các lớp trong danh sách của giáo viên
+    // Nếu không truyền `classIds` hoặc mảng rỗng, xóa toàn bộ các lớp hiện tại
+    if (!req.classIds || req.classIds.length === 0) {
+      teacher.classes = []; // Xóa toàn bộ các lớp
       await this.userRepository.save(teacher); // Lưu thay đổi
 
       return {
@@ -86,13 +86,13 @@ class TeachersService {
       };
     }
 
+    // Tìm các lớp được truyền lên
     const classes = await this.classRepository.find({
-      where: {
-        id: In(req.classIds),
-      },
+      where: { id: In(req.classIds) },
       relations: ['user', 'user.subject'],
     });
 
+    // Kiểm tra các lớp có tồn tại hay không
     if (classes.length !== req.classIds.length) {
       const foundClassIds = classes.map(classObj => classObj.id);
       const missingClassIds = req.classIds.filter(id => !foundClassIds.includes(id));
@@ -100,7 +100,12 @@ class TeachersService {
       throw new BadRequestException(`Lớp học với các ID ${missingClassIds.join(', ')} không tồn tại`);
     }
 
+    // Xóa các lớp cũ không nằm trong danh sách `req.classIds`
+    teacher.classes = teacher.classes.filter(cls => req.classIds.includes(cls.id));
+
+    // Kiểm tra và thêm giáo viên vào các lớp mới
     for (const classObj of classes) {
+      // Kiểm tra nếu lớp đã có giáo viên phụ trách cùng môn học
       for (const existingTeacher of classObj.user) {
         if (
           existingTeacher.role === Role.TEACHER &&
@@ -113,99 +118,28 @@ class TeachersService {
           );
         }
       }
-    }
 
-    teacher.classes = [...teacher.classes.filter(cls => !req.classIds.includes(cls.id)), ...classes];
-    for (const classObj of classes) {
+      // Thêm giáo viên vào lớp nếu chưa có
       if (!classObj.user.some(user => user.id === teacher.id)) {
         classObj.user.push(teacher);
       }
     }
 
+    // Cập nhật danh sách lớp mới
+    teacher.classes = [...teacher.classes, ...classes];
+
+    // Lưu thay đổi
+    await this.userRepository.save(teacher);
     await this.classRepository.save(classes);
 
     return {
       statusCode: 200,
-      message: "Thêm giáo viên vào lớp học thành công",
+      message: "Cập nhật lớp học của giáo viên thành công",
       data: null,
       totalCount: null,
     };
   }
 
-
-
-  async listStudentsInClass(teacherId: number, classId: number) {
-    const teacher = await this.userRepository.findOne({
-      where: { id: teacherId, role: Role.TEACHER },
-      relations: ['subject'],
-    });
-    if (!teacher) {
-      throw new NotFoundException('Giáo viên không tồn tại');
-    }
-
-    if (!teacher.subject) {
-      throw new BadRequestException('Giáo viên chưa được phân môn học');
-    }
-
-    const classEntity = await this.classRepository.findOne({
-      where: { id: classId },
-      relations: ['user'],
-    });
-    if (!classEntity) {
-      throw new NotFoundException('Lớp học không tồn tại');
-    }
-
-    const teacherOfClass = classEntity.user.find(
-      (user) => user.id === teacherId && user.role === Role.TEACHER
-    );
-
-    if (!teacherOfClass) {
-      throw new BadRequestException('Giáo viên không được phân công cho lớp này');
-    }
-
-    const students = classEntity.user.filter((user) => user.role === Role.STUDENT);
-
-    if (students.length === 0) {
-      return {
-        statusCode: 200,
-        message: 'Không có học sinh nào trong lớp này',
-        data: [],
-        totalCount: 0,
-      };
-    }
-
-    const studentGrades = await Promise.all(
-      students.map(async (student) => {
-        const grade = await this.gradeRepository.findOne({
-          where: {
-            user: { id: student.id },
-            class: classEntity.name,
-            subject: teacher.subject.name,
-          },
-        });
-
-        return {
-          studentId: student.id,
-          name: student.fullName,
-          grade: grade
-            ? {
-              scoreFactor1: grade.scoreFactor1,
-              scoreFactor2: grade.scoreFactor2,
-              scoreFactor3: grade.scoreFactor3,
-              averageScore: grade.averageScore,
-            }
-            : null,
-        };
-      })
-    );
-
-    return {
-      statusCode: 200,
-      message: 'Danh sách học sinh và điểm theo môn học',
-      data: studentGrades,
-      totalCount: studentGrades.length,
-    };
-  }
 
 
   async upsertGrades(teacherId: number, addGradeDto: AddGradeDto) {
