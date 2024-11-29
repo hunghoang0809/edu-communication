@@ -47,12 +47,14 @@ export class ClassService {
               .skip(skip)
               .take(filter.pageSize);
             const classes = await queryBuilder.getMany();
-            const quantity = classes.map((classEntity) => classEntity.user.length);
+            const classesWithQuantity = classes.map(classEntity => ({
+                ...classEntity,
+                quantity: classEntity.user.length, // Thêm trường quantity
+            }));
             const totalCount = await queryBuilder.getCount();
             return {
                 data: {
-                     classes,
-                    quantity: quantity
+                    classesWithQuantity,
             },
                 totalCount: totalCount
             }
