@@ -73,9 +73,9 @@ class TeachersService {
       throw new BadRequestException("Cập nhật môn học cho giáo viên trước khi phân công lớp");
     }
 
-    // Nếu mảng classIds rỗng, xóa toàn bộ các lớp mà giáo viên phụ trách
-    if (req.classIds.length === 0) {
-      teacher.classes = []; // Xóa hết các lớp trong danh sách của giáo viên
+    // Nếu không truyền `classIds` hoặc mảng rỗng, xóa toàn bộ các lớp hiện tại
+    if (!req.classIds || req.classIds.length === 0) {
+      teacher.classes = []; // Xóa toàn bộ các lớp
       await this.userRepository.save(teacher); // Lưu thay đổi
 
       return {
@@ -86,13 +86,13 @@ class TeachersService {
       };
     }
 
+    // Tìm các lớp được truyền lên
     const classes = await this.classRepository.find({
-      where: {
-        id: In(req.classIds),
-      },
+      where: { id: In(req.classIds) },
       relations: ['user', 'user.subject'],
     });
 
+    // Kiểm tra các lớp có tồn tại hay không
     if (classes.length !== req.classIds.length) {
       const foundClassIds = classes.map(classObj => classObj.id);
       const missingClassIds = req.classIds.filter(id => !foundClassIds.includes(id));
@@ -100,7 +100,12 @@ class TeachersService {
       throw new BadRequestException(`Lớp học với các ID ${missingClassIds.join(', ')} không tồn tại`);
     }
 
+    // Xóa các lớp cũ không nằm trong danh sách `req.classIds`
+    teacher.classes = teacher.classes.filter(cls => req.classIds.includes(cls.id));
+
+    // Kiểm tra và thêm giáo viên vào các lớp mới
     for (const classObj of classes) {
+      // Kiểm tra nếu lớp đã có giáo viên phụ trách cùng môn học
       for (const existingTeacher of classObj.user) {
         if (
           existingTeacher.role === Role.TEACHER &&
@@ -113,20 +118,23 @@ class TeachersService {
           );
         }
       }
-    }
 
-    teacher.classes = [...teacher.classes.filter(cls => !req.classIds.includes(cls.id)), ...classes];
-    for (const classObj of classes) {
+      // Thêm giáo viên vào lớp nếu chưa có
       if (!classObj.user.some(user => user.id === teacher.id)) {
         classObj.user.push(teacher);
       }
     }
 
+    // Cập nhật danh sách lớp mới
+    teacher.classes = [...teacher.classes, ...classes];
+
+    // Lưu thay đổi
+    await this.userRepository.save(teacher);
     await this.classRepository.save(classes);
 
     return {
       statusCode: 200,
-      message: "Thêm giáo viên vào lớp học thành công",
+      message: "Cập nhật lớp học của giáo viên thành công",
       data: null,
       totalCount: null,
     };

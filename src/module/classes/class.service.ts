@@ -47,9 +47,13 @@ export class ClassService {
               .skip(skip)
               .take(filter.pageSize);
             const classes = await queryBuilder.getMany();
+            const quantity = classes.map((classEntity) => classEntity.user.length);
             const totalCount = await queryBuilder.getCount();
             return {
-                data: classes,
+                data: {
+                     classes,
+                    quantity: quantity
+            },
                 totalCount: totalCount
             }
         }
