@@ -36,6 +36,7 @@ export class ClassService {
             });
             const totalCount = await this.classRepository.count();
             const classesWithQuantity = classes.map(classEntity => ({
+                id: classEntity.id,
                 name: classEntity.name,
                 quantity: classEntity.user.length,
                 createdAt: classEntity.createdAt,
