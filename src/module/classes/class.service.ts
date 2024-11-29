@@ -67,10 +67,12 @@ export class ClassService {
             throw new NotFoundException(`Class with ID ${id} not found`);
         }
         const students = classEntity.user.filter((user) => user.role === Role.STUDENT);
+        const quantity = students.length;
         return {
             data: {
                 ...classEntity,
                user: classToPlain(students),
+                quantity: quantity,
                 homeroomTeacher: classEntity.homeroomTeacher ? classEntity.homeroomTeacher.id : null,
             }
         };
