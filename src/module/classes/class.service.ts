@@ -32,11 +32,16 @@ export class ClassService {
             const classes = await this.classRepository.find({
                 skip,
                 take: filter.pageSize,
+                relations:['user']
             });
             const totalCount = await this.classRepository.count();
-
+            const classesWithQuantity = classes.map(classEntity => ({
+                name: classEntity.name,
+                quantity: classEntity.user.length,
+                createdAt: classEntity.createdAt,
+            }));
             return {
-                data: classes,
+                data: classesWithQuantity,
                 totalCount: totalCount
             };
         }else{
