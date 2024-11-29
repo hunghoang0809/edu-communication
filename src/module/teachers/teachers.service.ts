@@ -68,9 +68,24 @@ class TeachersService {
     if (!teacher) {
       throw new NotFoundException("Giáo viên không tồn tại");
     }
+
     if (!teacher.subject) {
-      throw new BadRequestException("Cập nhập môn học cho giáo viên trước khi phân công lớp")
+      throw new BadRequestException("Cập nhật môn học cho giáo viên trước khi phân công lớp");
     }
+
+    // Nếu mảng classIds rỗng, xóa toàn bộ các lớp mà giáo viên phụ trách
+    if (req.classIds.length === 0) {
+      teacher.classes = []; // Xóa hết các lớp trong danh sách của giáo viên
+      await this.userRepository.save(teacher); // Lưu thay đổi
+
+      return {
+        statusCode: 200,
+        message: "Đã xóa toàn bộ lớp học của giáo viên",
+        data: null,
+        totalCount: null,
+      };
+    }
+
     const classes = await this.classRepository.find({
       where: {
         id: In(req.classIds),
@@ -84,22 +99,29 @@ class TeachersService {
 
       throw new BadRequestException(`Lớp học với các ID ${missingClassIds.join(', ')} không tồn tại`);
     }
+
     for (const classObj of classes) {
       for (const existingTeacher of classObj.user) {
-        if (existingTeacher.role === Role.TEACHER && existingTeacher.subject && existingTeacher.subject.id === teacher.subject.id) {
-          if (existingTeacher.id == teacher.id) {
-            throw new BadRequestException(`Lớp ${classObj.name} đã có giáo viên phụ trách môn ${teacher.subject.name}`);
-          }
+        if (
+          existingTeacher.role === Role.TEACHER &&
+          existingTeacher.subject &&
+          existingTeacher.subject.id === teacher.subject.id &&
+          existingTeacher.id !== teacher.id
+        ) {
+          throw new BadRequestException(
+            `Lớp ${classObj.name} đã có giáo viên khác phụ trách môn ${teacher.subject.name}`
+          );
         }
       }
     }
 
-    teacher.classes = [...teacher.classes, ...classes];
+    teacher.classes = [...teacher.classes.filter(cls => !req.classIds.includes(cls.id)), ...classes];
     for (const classObj of classes) {
-      classObj.user.push(teacher);
+      if (!classObj.user.some(user => user.id === teacher.id)) {
+        classObj.user.push(teacher);
+      }
     }
 
-    await this.userRepository.save(teacher);
     await this.classRepository.save(classes);
 
     return {
@@ -109,6 +131,7 @@ class TeachersService {
       totalCount: null,
     };
   }
+
 
 
   async listStudentsInClass(teacherId: number, classId: number) {
